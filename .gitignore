@@ -1,3 +1,4 @@
 *.swp
 *.log
 *.MUJOCOLOG.txt
+MUJOCO_LOG.TXT
