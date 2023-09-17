@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="tensegrity_slam_sim" type="mujoco_sim_PubSitePos.py" name="mujoco_sim_PubSitePos" output="screen"/>
+    <node pkg="tensegrity_slam_sim" type="tf_broadcaster.py" name="world_frame_broadcaster"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find tensegrity_slam_sim)/launch/rviz/tensegrity.rviz"/>
+</launch>

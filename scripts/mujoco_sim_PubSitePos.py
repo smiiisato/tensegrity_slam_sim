@@ -22,7 +22,7 @@ class MujocoSim():
     def __init__(self):
 
         # ROSの初期化
-        rospy.init_node('mujoco_sim')
+        rospy.init_node('mujoco_sim_PubSitePos')
         self.rospack = RosPack()
 
         # initialize of model, data, viewer
