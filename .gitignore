@@ -2,3 +2,4 @@
 *.log
 *.MUJOCOLOG.txt
 MUJOCO_LOG.TXT
+.vscode

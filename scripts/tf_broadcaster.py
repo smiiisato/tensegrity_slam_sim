@@ -18,7 +18,7 @@ def broadcast_world_frame():
         # "world"から"base_link"への変換をbroadcastします。
         # 位置は(0, 0, 0)、回転は四元数(0, 0, 0, 1)で、実質的に変換はありません。
         br.sendTransform(
-            (0.0, 0.0, 0.0),  # 位置 (x, y, z)
+            (0.0, 0.0, 0.225),  # 位置 (x, y, z)
             (0.0, 0.0, 0.0, 1.0),  # 四元数 (x, y, z, w)
             current_time,   # タイムスタンプ
             "world",    # child frame (target frame of the transform)
