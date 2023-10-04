@@ -8,4 +8,5 @@
 各ワイヤの長さをpublishする
 
 ## launch
-
+### site_position.launch
+各頂点の位置をrvizで表示する
