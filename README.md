@@ -1,2 +1,7 @@
 # tensegrity_slam_sim
-code for slam with tensegrity robot
+
+## プログラム構成
+### mujoco_sim_PubSitePos.py 
+シミュレータからテンセグリティロボットモデルの各頂点の座標をpublishする
+
+### 
