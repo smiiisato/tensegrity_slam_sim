@@ -3,3 +3,5 @@
 *.MUJOCOLOG.txt
 MUJOCO_LOG.TXT
 .vscode
+saved/
+scripts/__pycache__/
