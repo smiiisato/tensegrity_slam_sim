@@ -48,10 +48,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(144,)) ## (24 + 6) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(144,)) ## (24 + 24) * n_prev
 
         self.rospack = RosPack()
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/tensegrity.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
         MujocoEnv.__init__(
             self, 
             model_path, 
@@ -66,7 +66,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         if self.test:
             self.mujoco_renderer.viewer._render_every_frame = False
 
-    def step(self, action):
+    def step(self, action): ## action: (24,) tention of each cable
         if not self.is_params_set:
             self.set_param()
             self.is_params_set = True
@@ -74,8 +74,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         if self.prev_action is None:
             self.prev_action = [copy.deepcopy(action) for i in range(self.n_prev)]
 
-        ## print action
-        print("action: ", len(action))
+        ## add noise to action
+        self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
 
         # do simulation
         self._step_mujoco_simulation(action, self.frame_skip)
@@ -97,13 +97,22 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                     self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link5")]],
                     self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
                     ])
-        self.current_body_xquat = copy.deepcopy(body_xquat) ## (4,)
+        self.current_body_xquat = copy.deepcopy(body_xquat) ## (24,)
 
+        forward_reward = 0
+        moving_reward = 0
+        ctrl_reward = 0
         # reward
         forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
         moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos)
-        ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
+        ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
+
+        """
+        print("forward_reward: {}".format(forward_reward))
+        print("moving_reward: {}".format(moving_reward))
+        print("ctrl_reward: {}".format(ctrl_reward))
+        """
 
         self.episode_cnt += 1
         self.step_cnt += 1
@@ -112,7 +121,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         terminated = not (self.episode_cnt < self.max_episode)
 
         self.prev_body_xpos = copy.deepcopy(self.current_body_xpos) ## (3,)
-        self.prev_body_xquat.append(copy.deepcopy(self.current_body_xquat)) ## (4,)
+        self.prev_body_xquat.append(copy.deepcopy(self.current_body_xquat)) ## (24,)
         if len(self.prev_body_xquat) > self.n_prev:
             self.prev_body_xquat.pop(0)
         self.prev_action.append(copy.deepcopy(action)) ## (24,)
