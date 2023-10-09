@@ -112,6 +112,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             print("forward_reward: {}".format(forward_reward))
             print("moving_reward: {}".format(moving_reward))
             print("ctrl_reward: {}".format(ctrl_reward))
+            print("action: {}".format(action))
         
 
         self.episode_cnt += 1
@@ -160,8 +161,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         )
     
     def _set_action_space(self):
-        low = np.array(self.ctrl_min)
-        high = np.array(self.ctrl_max)
+        low = np.asarray(self.ctrl_min)
+        high = np.asarray(self.ctrl_max)
         self.action_space = spaces.Box(low, high, dtype=np.float32)
         return self.action_space
     

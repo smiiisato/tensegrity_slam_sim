@@ -26,7 +26,7 @@ class MujocoSim():
         self.rospack = RosPack()
 
         # initialize of model, data, viewer
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_old.xml'
         self.model = mujoco_py.load_model_from_path(model_path)
         self.sim = mujoco_py.MjSim(self.model)
         viewer = mujoco_py.MjViewer(self.sim)
