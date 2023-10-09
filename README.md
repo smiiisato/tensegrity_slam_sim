@@ -13,6 +13,14 @@
 ### tensegrity_sim.py
 強化学習の環境を定義したクラス(TensegrityEnv)
 
+## models
+### scene.xml
+環境モデル
+
+### tensegrity_tension_actuated.xml
+張力制御テンセグリティモデル
+
+
 ## launch
 ### site_position.launch
 各頂点の位置をrvizで表示する
