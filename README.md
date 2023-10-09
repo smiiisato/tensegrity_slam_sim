@@ -20,11 +20,6 @@
 ### tensegrity_tension_actuated.xml
 張力制御テンセグリティモデル
 
-### scene_old.xml
-tensegrity.xmlをincludeする環境モデル
-
-### tensegrity.xml
-旧テンセグリティモデル
 
 ## launch
 ### site_position.launch
