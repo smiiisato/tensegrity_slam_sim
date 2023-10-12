@@ -172,17 +172,25 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.step_rate = self.default_step_rate
         self.max_episode = 500 + 2500*self.step_rate
 
-        qpos = np.array([-0.1, 0, 0.5, 1.0, 0, 0, 0,
-                0.1, 0, 0.5, 1.0, 0, 0, 0,
-                0, 0.1, 0.5, 1.0, 0, 0, 0,
-                0, -0.1, 0.5, 1.0, 0, 0, 0,
-                0, 0, 0.6, 1.0, 0, 0, 0,
-                0, 0, 0.4, 1.0, 0, 0, 0
+        qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,
+                0.1, 0, 0.0, 1.0, 0, 0, 0,
+                0, 0.1, 0.0, 1.0, 0, 0, 0,
+                0, -0.1, 0.0, 1.0, 0, 0, 0,
+                0, 0, 0.1, 1.0, 0, 0, 0,
+                0, 0, -0.1, 1.0, 0, 0, 0
                 ])
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        qvel += 0.1*self.step_rate*np.random.randn(len(qvel))
+        if self.step_rate > 0.1:
+            qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0
+                ])
+            qvel += 0.1*self.step_rate*np.random.randn(len(qvel))
         self.set_state(qpos, qvel)
 
         if (self.prev_body_xquat is None) and (self.prev_action is None):
