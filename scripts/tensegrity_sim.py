@@ -190,7 +190,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0
                 ])
-            qvel += 0.1*self.step_rate*np.random.randn(len(qvel))
+            qvel += 0.02*self.step_rate*np.random.randn(len(qvel))
         self.set_state(qpos, qvel)
 
         if (self.prev_body_xquat is None) and (self.prev_action is None):
