@@ -81,7 +81,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_action = [copy.deepcopy(action) for i in range(self.n_prev)]
 
         if self.prev_command is None:
-            self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
+            self.prev_command = np.array([copy.deepcopy(self.command) for i in range(self.n_prev)])
 
         ## add noise to action
         self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
@@ -252,7 +252,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         
         if self.prev_command is None:
             self.command = np.random.choice([1,2,3,4])
-            self.prev_command = [self.command for i in range(self.n_prev)]
+            self.prev_command = np.array([self.command for i in range(self.n_prev)]) ## (1,)
 
         return self._get_obs()
 
