@@ -54,7 +54,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(144,)) ## (24 + 24) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(147,)) ## (24 + 24) * n_prev
 
         self.rospack = RosPack()
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
@@ -81,7 +81,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_action = [copy.deepcopy(action) for i in range(self.n_prev)]
 
         if self.prev_command is None:
-            self.prev_command = np.array([copy.deepcopy(self.command) for i in range(self.n_prev)])
+            self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
 
         ## add noise to action
         self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
@@ -190,7 +190,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
-                np.concatenate(self.prev_command),
+                self.prev_command,
             ]
         )
     
@@ -252,7 +252,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         
         if self.prev_command is None:
             self.command = np.random.choice([1,2,3,4])
-            self.prev_command = np.array([self.command for i in range(self.n_prev)]) ## (1,)
+            self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 
         return self._get_obs()
 
