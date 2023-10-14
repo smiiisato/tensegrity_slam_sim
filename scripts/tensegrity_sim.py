@@ -102,11 +102,12 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         forward_reward = 0
         moving_reward = 0
         ctrl_reward = 0
+        rolling_reward = 0
         # reward
         forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
         moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos)
-        ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
-        reward = forward_reward + moving_reward + ctrl_reward
+        ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])    
+        reward = forward_reward + moving_reward + ctrl_reward + rolling_reward
 
         if self.test:
             print("forward_reward: {}".format(forward_reward))
@@ -149,6 +150,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                 reward_forward=forward_reward,
                 reward_moving=moving_reward,
                 reward_ctrl=ctrl_reward,
+                reward_rolling=rolling_reward,
                 )
             )
     

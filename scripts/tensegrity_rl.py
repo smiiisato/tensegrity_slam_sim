@@ -69,6 +69,7 @@ def main():
             n_epochs = args.epoch,
             gamma = args.gamma,
             verbose=1,
+            device="cpu",
             tensorboard_log=root_dir+"/../saved")
 
     policy = None
