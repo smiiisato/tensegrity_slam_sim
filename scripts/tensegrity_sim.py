@@ -27,12 +27,12 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.ctrl_max = [0]*24
         self.ctrl_min = [-6.0]*24
 
-        # initial command
-        self.command = np.random.choice([1,2,3,4])
+        # initial command, direction +x
+        self.command = 0
 
         self.n_prev = 3
         self.max_episode = 1000
-        self.max_command = 250
+        self.max_command = 500
         
         self.current_body_xpos = None
         self.current_body_xquat = None
@@ -114,13 +114,13 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ctrl_reward = 0
 
         # reward
-        if self.command == 1:
+        if self.command == 0:
             forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
-        elif self.command == 2:
+        elif self.command == 1:
             forward_reward = -100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
-        elif self.command == 3:
+        elif self.command == 2:
             forward_reward = 100.0*(self.current_body_xpos[1] - self.prev_body_xpos[1])
-        elif self.command == 4:
+        elif self.command == 3:
             forward_reward = -100.0*(self.current_body_xpos[1] - self.prev_body_xpos[1])
         else:
             raise ValueError("command is not set")
@@ -155,9 +155,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_command.pop(0)
 
         ## switch to new command
-        if self.command_cnt > self.max_command:
+        if (self.step_rate) > 0.8 and (self.command_cnt > self.max_command):
             self.command_cnt = 0
-            self.command = np.random.choice([1,2,3,4])
+            self.command = np.random.choice(4)
 
         ## observation
         obs = self._get_obs()
@@ -250,9 +250,13 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_body_xquat = [copy.deepcopy(body_xquat) for i in range(self.n_prev)]
             self.prev_action = [np.zeros(24) for i in range(self.n_prev)] ## (24,)
         
-        if self.prev_command is None:
-            self.command = np.random.choice([1,2,3,4])
-            self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
+        ## switch to new command
+        if self.step_rate > 0.3:
+            self.command = np.random.choice(4)
+        else:
+            self.command = 0
+        
+        self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 
         return self._get_obs()
 
