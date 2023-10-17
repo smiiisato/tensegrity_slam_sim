@@ -161,9 +161,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_command.pop(0)
 
         ## switch to new command
-        if (self.step_rate) > 0.8 and (self.command_cnt > self.max_command):
-            self.command_cnt = 0
-            self.command = np.random.choice(4)
+        ##if self.randomize_command and (self.command_cnt > self.max_command):
+        ##    self.command_cnt = 0
+        ##    self.command = np.random.choice(4)
 
         ## observation
         obs = self._get_obs()
@@ -206,8 +206,11 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.action_space = spaces.Box(low, high, dtype=np.float32)
         return self.action_space
     
-    def start_randomizing(self):
+    def start_randomizing_position(self):
         self.randomize_position = True
+
+    def start_randomizing_command(self):
+        self.randomize_command = True
     
     def reset_model(self):
         if self.max_step:

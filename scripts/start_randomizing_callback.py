@@ -16,9 +16,9 @@ class StartRandomizingCallback(BaseCallback):
         """
         This method is called before collecting the rollouts.
         """
-        self.episode_rewards = self.logger.info("episode_rewards")
+        self.ep_rew_mean = self.logger.info("rollout/ep_rew_mean")
         if self.episode_rewards > self.threshold and not self.changed:
-            self.training_env.env_method("start_randomizing")
+            self.training_env.env_method("start_randomizing_position")
             self.changed = True
 
         
