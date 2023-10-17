@@ -231,7 +231,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        if self.start_randomizing:
+        if self.start_randomizing_position:
             qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
