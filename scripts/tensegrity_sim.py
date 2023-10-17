@@ -141,7 +141,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             #print("forward_reward: {}".format(forward_reward))
             #print("moving_reward: {}".format(moving_reward))
             #print("ctrl_reward: {}".format(ctrl_reward))
-            print("action: {}".format(action))
+            ##print("action: {}".format(action))
+            print("")
             #print("command: {}".format(self.command))
 
         self.episode_cnt += 1
