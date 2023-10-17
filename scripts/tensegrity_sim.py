@@ -22,6 +22,12 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.test = test
         self.ros = ros
         self.max_step = max_steps
+        
+        # flag for randomizing initial position
+        self.randomize_position = False
+
+        # flag for randomizing command
+        self.randomize_command = False
 
         # control range
         self.ctrl_max = [0]*24
@@ -200,6 +206,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.action_space = spaces.Box(low, high, dtype=np.float32)
         return self.action_space
     
+    def start_randomizing(self):
+        self.randomize_position = True
+    
     def reset_model(self):
         if self.max_step:
             self.step_rate = float(self.step_cnt)/self.max_step
@@ -217,7 +226,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        if self.step_rate > 0.1:
+        if self.start_randomizing:
             qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
@@ -251,7 +260,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_action = [np.zeros(24) for i in range(self.n_prev)] ## (24,)
         
         ## switch to new command
-        if self.step_rate > 0.3:
+        if self.randomize_command:
             self.command = np.random.choice(4)
         else:
             self.command = 0
