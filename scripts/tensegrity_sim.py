@@ -129,12 +129,14 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
 
+        print("command: {}".format(self.command))
+
         if self.test:
             #print("forward_reward: {}".format(forward_reward))
             #print("moving_reward: {}".format(moving_reward))
             #print("ctrl_reward: {}".format(ctrl_reward))
-            #print("action: {}".format(action))
-            print("command: {}".format(self.command))
+            print("action: {}".format(action))
+            #print("command: {}".format(self.command))
 
         self.episode_cnt += 1
         self.step_cnt += 1
