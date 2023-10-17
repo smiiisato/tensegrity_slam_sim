@@ -15,6 +15,7 @@ from stable_baselines3.common.utils import set_random_seed, get_device, get_late
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from start_randomizing_callback import StartRandomizingCallback
+from start_command_callback import StartCommandCallback
 
 from tensegrity_sim import TensegrityEnv
 
@@ -101,7 +102,8 @@ def main():
         save_freq = args.n_step*args.save_interval
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
         start_randomizing_callback = StartRandomizingCallback(80.0)
-        callbacks = CallbackList([checkpoint_callback, start_randomizing_callback])
+        start_command_callback = StartCommandCallback(80.0)
+        callbacks = CallbackList([checkpoint_callback, start_randomizing_callback, start_command_callback])
         model.learn(total_timesteps=args.max_step, callback=callbacks)
     elif args.what == "test":
         step = 0
