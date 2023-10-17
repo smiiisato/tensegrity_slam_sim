@@ -14,7 +14,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed, get_device, get_latest_run_id
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
-from scripts.start_randomizing_callback import StartRandomizingCallback
+from start_randomizing_callback import StartRandomizingCallback
 
 from tensegrity_sim import TensegrityEnv
 
