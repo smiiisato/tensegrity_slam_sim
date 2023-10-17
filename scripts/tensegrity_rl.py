@@ -12,8 +12,9 @@ from stable_baselines3.ppo.policies import MlpPolicy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed, get_device, get_latest_run_id
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from scripts.start_randomizing_callback import StartRandomizingCallback
 
 from tensegrity_sim import TensegrityEnv
 
@@ -99,7 +100,9 @@ def main():
         trial = get_latest_run_id(root_dir + "/../saved", "PPO") + 1
         save_freq = args.n_step*args.save_interval
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
-        model.learn(total_timesteps=args.max_step, callback=checkpoint_callback)
+        start_randomizing_callback = StartRandomizingCallback(80.0)
+        callbacks = CallbackList([checkpoint_callback, start_randomizing_callback])
+        model.learn(total_timesteps=args.max_step, callback=callbacks)
     elif args.what == "test":
         step = 0
         start_time = time.time()
