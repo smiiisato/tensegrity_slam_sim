@@ -7,11 +7,12 @@ class StartCommandCallback(BaseCallback):
     """
     平均報酬が閾値を超えたら、初期位置のランダム化を開始するコールバック。
     """
-    def __init__(self, threshold, verbose=0):
+    def __init__(self, threshold, model, verbose=0):
         super(StartCommandCallback, self).__init__(verbose)
         self.threshold = threshold
         self.changed = False
         self.ep_rew_mean = None
+        self.model = model
 
     def _on_step(self) -> bool:
         """
