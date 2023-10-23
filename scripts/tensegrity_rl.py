@@ -102,7 +102,7 @@ def main():
         save_freq = args.n_step*args.save_interval
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
         start_randomizing_callback = StartRandomizingCallback(model=model, threshold=80.0)
-        start_command_callback = StartCommandCallback(model=model, threshold=80.0)
+        start_command_callback = StartCommandCallback(model=model, threshold=50.0)
         callbacks = CallbackList([checkpoint_callback, start_randomizing_callback, start_command_callback])
         model.learn(total_timesteps=args.max_step, callback=callbacks)
     elif args.what == "test":

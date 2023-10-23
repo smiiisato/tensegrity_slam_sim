@@ -168,6 +168,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ##    self.command_cnt = 0
         ##    self.command = np.random.choice(4)
 
+        print("observation: {}".format(self._get_obs().dtype))
         ## observation
         obs = self._get_obs()
         
@@ -199,7 +200,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
-                self.prev_command,
+                np.array(self.prev_command).astype(np.float64),
             ]
         )
     
@@ -214,6 +215,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
 
     def start_randomizing_command(self):
         self.randomize_command = True
+
+    ## increment self.command
+    def increment_command(self, command):
+        self.command = command
     
     def reset_model(self):
         if self.max_step:
@@ -268,8 +273,6 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ## switch to new command
         if self.randomize_command:
             self.command = np.random.choice(4)
-        else:
-            self.command = 0
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 

@@ -20,7 +20,7 @@ class StartRandomizingCallback(BaseCallback):
         """
         self.ep_rew_mean = safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
         if self.ep_rew_mean and (self.ep_rew_mean > self.threshold) and not self.changed:
-            self.training_env.env_method("start_randomizing_position")
+            self.model.get_env().set_attr("randomize_position", True)
             self.changed = True
         
         return True

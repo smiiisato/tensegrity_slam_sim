@@ -10,17 +10,22 @@ class StartCommandCallback(BaseCallback):
     def __init__(self, threshold, model, verbose=0):
         super(StartCommandCallback, self).__init__(verbose)
         self.threshold = threshold
-        self.changed = False
+        self.randomized = False
         self.ep_rew_mean = None
         self.model = model
-
+        self.current_command = 0
+     
     def _on_step(self) -> bool:
         """
         This method is called before collecting the rollouts.
         """
         self.ep_rew_mean = safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
-        if self.ep_rew_mean and (self.ep_rew_mean > self.threshold) and not self.changed:
-            self.training_env.env_method("start_randomizing_command")
-            self.changed = True
+        if self.ep_rew_mean and (self.ep_rew_mean > self.threshold) and not self.randomized:
+            self.current_command += 1
+            self.model.get_env().set_attr("command", self.current_command)
+
+        if self.current_command > 2 and (self.ep_rew_mean > self.threshold) and not self.randomized:
+            self.randomized = True
+            self.model.get_env().set_attr("randomize_command", True)
         
         return True
