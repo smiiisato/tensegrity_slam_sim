@@ -60,7 +60,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(147,)) ## (24 + 24) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(147,)) ## (24 + 24) * n_prev + prev_command
 
         self.rospack = RosPack()
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
@@ -168,8 +168,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ##    self.command_cnt = 0
         ##    self.command = np.random.choice(4)
 
-        print("observation: {}".format(self._get_obs().dtype))
+        ##print("observation: {}".format(self._get_obs().dtype))
         ## observation
+        assert self.command is not None
+        assert self.prev_command is not None
         obs = self._get_obs()
         
         if terminated or truncated:
@@ -178,10 +180,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.current_body_xpos = None
             self.prev_body_xpos = None
             self.current_body_xquat = None
-            self.command = None
             self.prev_body_xquat = None
             self.prev_action = None
-            self.prev_command = None
+            #self.prev_command = None
 
         return (
             obs,
@@ -200,7 +201,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
-                np.array(self.prev_command).astype(np.float64),
+                self.prev_command,
             ]
         )
     
@@ -273,6 +274,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ## switch to new command
         if self.randomize_command:
             self.command = np.random.choice(4)
+        else:
+            self.command = 0
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 
