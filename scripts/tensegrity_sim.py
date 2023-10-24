@@ -272,10 +272,13 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_action = [np.zeros(24) for i in range(self.n_prev)] ## (24,)
         
         ## switch to new command
-        if self.randomize_command:
+        if self.test:
             self.command = np.random.choice(4)
         else:
-            self.command = 0
+            if self.randomize_command:
+                self.command = np.random.choice(4)
+            else:
+                self.command = 0
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 
