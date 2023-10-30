@@ -22,8 +22,8 @@ class StartCommandCallback(BaseCallback):
         This method is called before collecting the rollouts.
         """
         self.ep_rew_mean = safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
-        if self.ep_rew_mean and (self.ep_rew_mean > self.threshold) and not self.randomized:
+        if self.ep_rew_mean and (self.ep_rew_mean > self.threshold):
             self.randomized = True
-            self.training_env.env_method("start_randomizing_command")
+            self.training_env.env_method("enlarge_command_space")
         
         return True

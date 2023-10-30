@@ -35,6 +35,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
 
         # initial command, direction +x
         self.command = 0
+        # max degree of command range
+        self.max_degree = 0
 
         self.n_prev = 3
         self.max_episode = 1000
@@ -78,7 +80,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         if self.test:
             self.mujoco_renderer.viewer._render_every_frame = False
 
-    def step(self, action): ## action: (24,) tention of each cable
+    def step(self, action): ## action: (24,) tension of each cable
         if not self.is_params_set:
             self.set_param()
             self.is_params_set = True
@@ -120,14 +122,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ctrl_reward = 0
 
         # reward
-        if self.command == 0:
-            forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
-        elif self.command == 1:
-            forward_reward = -100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
-        elif self.command == 2:
-            forward_reward = 100.0*(self.current_body_xpos[1] - self.prev_body_xpos[1])
-        elif self.command == 3:
-            forward_reward = -100.0*(self.current_body_xpos[1] - self.prev_body_xpos[1])
+        if self.command is not None:
+            forward_reward = 0.1*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
         else:
             raise ValueError("command is not set")
         
@@ -214,8 +210,11 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
     def start_randomizing_position(self):
         self.randomize_position = True
 
-    def start_randomizing_command(self):
+    def enlarge_command_space(self):
+        ## enlarge command range: max[-180, 180]
         self.randomize_command = True
+        if self.max_degree < 180:
+            self.max_degree += 20
 
     ## increment self.command
     def increment_command(self, command):
@@ -273,10 +272,11 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         
         ## switch to new command
         if self.test:
-            self.command = np.random.choice(4)
+            #self.command = np.random.uniform(-180, 180)
+            self.command = np.random.uniform(-self.max_degree, self.max_degree)
         else:
             if self.randomize_command:
-                self.command = np.random.choice(4)
+                self.command = np.random.uniform(-self.max_degree, self.max_degree)
             else:
                 self.command = 0
         
