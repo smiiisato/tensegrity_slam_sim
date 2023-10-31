@@ -26,6 +26,7 @@ def parser():
     parser.add_argument("--render", type=int, default=1, help="Render or not (only when testing)")
     parser.add_argument("--trial", type=int, default=None, help="PPO trial number to load")
     parser.add_argument("--iter", type=int, default=None, help="PPO trial number to load. if None, best iter is loaded")
+    parser.add_argument("--load_step", type=int, default=None, help="PPO timestep to load.")
     parser.add_argument("--max_step", type=int, default=20000000, help="PPO train total timesteps")
     parser.add_argument("--n_step", type=int, default=2048, help="number of steps for each env to update")
     parser.add_argument("--batch", type=int, default=64, help="number of batch to update")
@@ -74,17 +75,16 @@ def main():
             tensorboard_log=root_dir+"/../saved")
 
     policy = None
-    if (args.what == "test") or args.resume:
+    if (args.what == "test"):
         if args.trial is not None:
             load_iter = None
             if args.iter is not None:
                 load_iter = args.iter
+                load_step = sorted_rew_data.loc[load_iter, 'step']
             else: # best iter is extracted
                 tlog_path = glob.glob(root_dir + "/../saved/PPO_{0}/events.out*".format(args.trial))[0]
                 tlog = EventAccumulator(tlog_path)
                 tlog.Reload()
-
-
                 scalars = tlog.Scalars('rollout/ep_rew_mean')
                 rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
                 model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
@@ -96,6 +96,15 @@ def main():
             weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(args.trial, load_step)
             print("load: {}".format(weight))
             model = model.load(weight, print_system_info=True)
+
+    if args.resume:
+        assert args.load_step is not None
+        assert args.trial is not None
+        trial = args.trial
+        weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(trial, args.load_step)
+        print("load: {}".format(weight))
+        model = model.load(weight, print_system_info=True, env=env)
+        
 
     if args.what == "train":
         trial = get_latest_run_id(root_dir + "/../saved", "PPO") + 1
