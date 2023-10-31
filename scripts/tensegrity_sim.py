@@ -123,11 +123,11 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
 
         # reward
         if self.command is not None:
-            forward_reward = 0.1*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
+            forward_reward = 100.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
         else:
             raise ValueError("command is not set")
         
-        moving_reward = 0.01*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos)
+        moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos)
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
 
