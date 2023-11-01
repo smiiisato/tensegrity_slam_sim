@@ -78,19 +78,19 @@ def main():
     if (args.what == "test"):
         if args.trial is not None:
             load_iter = None
+            tlog_path = glob.glob(root_dir + "/../saved/PPO_{0}/events.out*".format(args.trial))[0]
+            tlog = EventAccumulator(tlog_path)
+            tlog.Reload()
+            scalars = tlog.Scalars('rollout/ep_rew_mean')
+            rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
+            model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
+            n_all_iter = len(rew_data.iloc[args.save_interval-1::args.save_interval])
+            sorted_rew_data = (rew_data.iloc[args.save_interval-1::args.save_interval])[int(args.best_rate*n_all_iter):].sort_values(by="value")
+            print(sorted_rew_data)
             if args.iter is not None:
                 load_iter = args.iter
                 load_step = sorted_rew_data.loc[load_iter, 'step']
             else: # best iter is extracted
-                tlog_path = glob.glob(root_dir + "/../saved/PPO_{0}/events.out*".format(args.trial))[0]
-                tlog = EventAccumulator(tlog_path)
-                tlog.Reload()
-                scalars = tlog.Scalars('rollout/ep_rew_mean')
-                rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
-                model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
-                n_all_iter = len(rew_data.iloc[args.save_interval-1::args.save_interval])
-                sorted_rew_data = (rew_data.iloc[args.save_interval-1::args.save_interval])[int(args.best_rate*n_all_iter):].sort_values(by="value")
-                print(sorted_rew_data)
                 load_iter = sorted_rew_data.tail(1).index[0]
                 load_step = sorted_rew_data.loc[load_iter, 'step']
             weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(args.trial, load_step)
