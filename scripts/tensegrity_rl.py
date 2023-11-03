@@ -61,7 +61,7 @@ def main():
             env,
             policy_kwargs = dict(
                 activation_fn=torch.nn.Tanh,
-                net_arch=dict(pi=[144, 72], vf=[144, 72]), ## changed from [256, 128]
+                net_arch=dict(pi=[153, 72], vf=[153, 72]), ## changed from [256, 128]
                 log_std_init=-0.5,
                 ),
             n_steps = args.n_step,

@@ -48,7 +48,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(144,)) ## (24 + 24) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(153,)) ## (24 + 24 + 3) * n_prev
 
         self.rospack = RosPack()
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
@@ -103,8 +103,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         moving_reward = 0
         ctrl_reward = 0
         # reward
-        forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[0])
-        moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos)
+        forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[-1][0])
+        moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
 
@@ -120,10 +120,12 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         truncated = False
         terminated = not (self.episode_cnt < self.max_episode)
 
-        self.prev_body_xpos = copy.deepcopy(self.current_body_xpos) ## (3,)
+        self.prev_body_xpos.append(copy.deepcopy(self.current_body_xpos)) ## (3,)
         self.prev_body_xquat.append(copy.deepcopy(self.current_body_xquat)) ## (24,)
         if len(self.prev_body_xquat) > self.n_prev:
             self.prev_body_xquat.pop(0)
+        if len(self.prev_body_xpos) > self.n_prev:
+            self.prev_body_xpos.pop(0)
         self.prev_action.append(copy.deepcopy(action)) ## (24,)
         if len(self.prev_action) > self.n_prev:
             self.prev_action.pop(0)
@@ -156,6 +158,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
+                np.concatenate(self.current_body_xpos)
             ]
         )
     
@@ -203,7 +206,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                     self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link5")]],
                     self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
                     ))
-            self.prev_body_xpos = np.mean(body_xpos, axis=0)
+            self.prev_body_xpos = [np.mean(body_xpos, axis=0) for i in range(self.n_prev)]
             body_xquat = np.concatenate([
                         self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link1")]],
                         self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link2")]],
