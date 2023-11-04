@@ -27,6 +27,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.ctrl_max = [0]*24
         self.ctrl_min = [-6.0]*24
 
+        # initial command, direction +x
+        self.command = 0
+
         self.n_prev = 3
         self.max_episode = 1000
         
@@ -103,7 +106,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         moving_reward = 0
         ctrl_reward = 0
         # reward
-        forward_reward = 100.0*(self.current_body_xpos[0] - self.prev_body_xpos[-1][0])
+        if self.command is not None:
+            forward_reward = 100.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[-1][:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
+        else:
+            raise ValueError("command is not set")
         moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
@@ -158,7 +164,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
-                np.concatenate(self.current_body_xpos)
+                np.concatenate(self.prev_body_xpos)
             ]
         )
     
@@ -217,6 +223,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                         ])
             self.prev_body_xquat = [copy.deepcopy(body_xquat) for i in range(self.n_prev)]
             self.prev_action = [np.zeros(24) for i in range(self.n_prev)] ## (24,)
+
+            if self.command is None:
+                self.command = 0
 
         return self._get_obs()
 

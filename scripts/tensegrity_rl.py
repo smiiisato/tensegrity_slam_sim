@@ -12,8 +12,9 @@ from stable_baselines3.ppo.policies import MlpPolicy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed, get_device, get_latest_run_id
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from reward_threshold_callback import RewardThresholdCallback
 
 from tensegrity_sim import TensegrityEnv
 
@@ -98,8 +99,10 @@ def main():
     if args.what == "train":
         trial = get_latest_run_id(root_dir + "/../saved", "PPO") + 1
         save_freq = args.n_step*args.save_interval
+        reward_threshold_callback = RewardThresholdCallback(threshold=1000, env=env, model=model)
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
-        model.learn(total_timesteps=args.max_step, callback=checkpoint_callback)
+        callbacks = CallbackList([reward_threshold_callback, checkpoint_callback])
+        model.learn(total_timesteps=args.max_step, callback=callbacks)
     elif args.what == "test":
         step = 0
         start_time = time.time()
