@@ -3,11 +3,11 @@
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.utils import safe_mean
 
-class StartRandomizingCallback(BaseCallback):
+class RewardThresholdCallback(BaseCallback):
     """
     平均報酬が閾値を超えたら、初期位置のランダム化を開始するコールバック。
     """
-    def __init__(self, threshold=1000, env, model, verbose=0):
+    def __init__(self, threshold, env, model, verbose=0):
         super(RewardThresholdCallback, self).__init__(verbose)
         self.threshold = threshold
         self.ep_rew_mean = None
