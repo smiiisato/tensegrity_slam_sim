@@ -16,6 +16,8 @@ class StartCommandCallback(BaseCallback):
         self.env = env
         self.current_command = 0
         self.model = model
+        self.steps_since_increment = 0
+        self.increment_amount = 100000
      
     def _on_step(self) -> bool:
         """
@@ -23,7 +25,12 @@ class StartCommandCallback(BaseCallback):
         """
         self.ep_rew_mean = safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
         if self.ep_rew_mean and (self.ep_rew_mean > self.threshold):
-            self.randomized = True
-            self.training_env.env_method("enlarge_command_space")
+            if not self.randomized:
+                self.randomized = True
+            elif self.steps_since_increment > self.increment_amount:
+                self.steps_since_increment = 0
+                self.training_env.env_method("enlarge_command_space")
+        if self.randomized:
+            self.steps_since_increment += 1
         
         return True

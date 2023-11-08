@@ -5,9 +5,9 @@ import numpy as np
 from rospkg import RosPack
 from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
-from tensegrity_sim import TensegritySim
+from tensegrity_sim import TensegrityEnv
 
-class TensegrityEnvDirection(TensegritySim):
+class TensegrityEnvDirection(TensegrityEnv):
 
     def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
         self.is_params_set = False
@@ -146,5 +146,6 @@ class TensegrityEnvDirection(TensegritySim):
                 self.command = 0
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
+        print("command: ", self.command)
 
         return self._get_obs()
