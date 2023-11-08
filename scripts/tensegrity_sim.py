@@ -22,6 +22,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.test = test
         self.ros = ros
         self.max_step = max_steps
+        self.step_rate_max_cnt = 50000000
 
         # control range
         self.ctrl_max = [0]*24
@@ -80,6 +81,9 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         if self.prev_action is None:
             self.prev_action = [copy.deepcopy(action) for i in range(self.n_prev)]
 
+        if self.prev_command is None:
+            self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
+
         ## add noise to action
         self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
 
@@ -130,6 +134,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         terminated = not (self.episode_cnt < self.max_episode)
 
         self.prev_body_xpos.append(copy.deepcopy(self.current_body_xpos)) ## (3,)
+        if len(self.prev_body_xpos) > self.n_prev:
+            self.prev_body_xpos.pop(0)
         self.prev_body_xquat.append(copy.deepcopy(self.current_body_xquat)) ## (24,)
         if len(self.prev_body_xquat) > self.n_prev:
             self.prev_body_xquat.pop(0)
@@ -140,6 +146,8 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.prev_action.pop(0)
 
         ## observation
+        assert self.command is not None
+        assert self.prev_command is not None
         obs = self._get_obs()
         
         if terminated or truncated:
@@ -186,10 +194,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
     
     def reset_model(self):
         if self.max_step:
-            self.step_rate = float(self.step_cnt)/self.max_step
+            self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
         elif self.test:
             self.step_rate = self.default_step_rate
-        self.max_episode = 500 + 2500*self.step_rate
+        self.max_episode = 500 + 1500*self.step_rate
 
         qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,
                 0.1, 0, 0.0, 1.0, 0, 0, 0,
