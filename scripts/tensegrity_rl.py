@@ -15,8 +15,11 @@ from stable_baselines3.common.utils import set_random_seed, get_device, get_late
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from reward_threshold_callback import RewardThresholdCallback
+from start_randomising_callback import StartRandomizingCallback
+from start_command_callback import StartCommandCallback
 
 from tensegrity_sim import TensegrityEnv
+from tensegrity_sim_direction import TensegrityEnvDirection
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -36,14 +39,22 @@ def parser():
     parser.add_argument('--resume', action="store_true", help='resume the training')
     parser.add_argument('--ros', action="store_true", help='publish some info using ros when testing')
     parser.add_argument("--best_rate", type=float, default=0.0, help="if 0.0, choose best snapshot from all iterations")
+    parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction)]")
     return parser
 
 def make_env(max_step):
+    args = parser().parse_args()
     def _init(render=False, test=False, ros=False):
         if test:
-            env = Monitor(TensegrityEnv(test, ros, max_step, render_mode="human"))
+            if args.sim_env == 1:
+                env = Monitor(TensegrityEnv(test, ros, max_step, render_mode="human"))
+            elif args.sim_env == 2:
+                env = Monitor(TensegrityEnvDirection(test, ros, max_step, render_mode="human"))
         else:
-            env = Monitor(TensegrityEnv(test, ros, max_step))
+            if args.sim_env == 1:
+                env = Monitor(TensegrityEnv(test, ros, max_step))
+            elif args.sim_env == 2:
+                env = Monitor(TensegrityEnvDirection(test, ros, max_step))
         return env
     return _init
 
@@ -62,7 +73,7 @@ def main():
             env,
             policy_kwargs = dict(
                 activation_fn=torch.nn.Tanh,
-                net_arch=dict(pi=[153, 72], vf=[153, 72]), ## changed from [256, 128]
+                net_arch=dict(pi=[env.observation_space.shape[0], 72], vf=[env.observation_space.shape[0], 72]), ## changed from [256, 128]
                 log_std_init=-0.5,
                 ),
             n_steps = args.n_step,
@@ -101,7 +112,9 @@ def main():
         save_freq = args.n_step*args.save_interval
         reward_threshold_callback = RewardThresholdCallback(threshold=2000, env=env, model=model)
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
-        callbacks = CallbackList([reward_threshold_callback, checkpoint_callback])
+        start_randomizing_callback = StartRandomizingCallback(threshold=200, env=env, model=model)
+        start_command_callback = StartCommandCallback(threshold=100, env=env, model=model)
+        callbacks = CallbackList([reward_threshold_callback, checkpoint_callback, start_randomizing_callback, start_command_callback])
         model.learn(total_timesteps=args.max_step, callback=callbacks)
     elif args.what == "test":
         step = 0
