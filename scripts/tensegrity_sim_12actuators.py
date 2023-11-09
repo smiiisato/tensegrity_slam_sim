@@ -7,7 +7,60 @@ from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 
-class TensegrityEnvDirection(TensegrityEnv):
+class TensegrityEnv12Actuators(TensegrityEnv):
+
+    def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
+        self.action_length = 12
+        self.is_params_set = False
+        self.test = test
+        self.ros = ros
+        self.max_step = max_steps
+        self.step_rate_max_cnt = 50000000
+
+        # control range
+        self.ctrl_max = [0]*self.action_length
+        self.ctrl_min = [-6.0]*self.action_length
+
+        # initial command, direction +x
+        self.command = 0
+
+        # flag for randomizing initial position
+        self.randomize_position = False
+
+        self.n_prev = 3
+        self.max_episode = 1000
+        
+        self.current_body_xpos = None
+        self.current_body_xquat = None
+        self.prev_body_xpos = None
+        self.prev_body_xquat = None
+        self.prev_action = None
+
+        self.episode_cnt = 0
+        self.step_cnt = 0
+
+        if self.test:
+            self.default_step_rate = 0.5
+
+        if self.test and self.ros:
+            import rospy
+            from std_msgs.msg import Float32MultiArray
+            self.debug_msg = Float32MultiArray()
+            self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
+
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(117,)) ## (24 + 12 + 3) * n_prev
+
+        self.rospack = RosPack()
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators.xml'
+        MujocoEnv.__init__(
+            self, 
+            model_path, 
+            5,
+            observation_space=observation_space,
+            **kwargs
+            )
+        
+        utils.EzPickle.__init__(self)
     
     def reset_model(self):
         if self.max_step:
@@ -57,7 +110,7 @@ class TensegrityEnvDirection(TensegrityEnv):
                         self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
                         ])
             self.prev_body_xquat = [copy.deepcopy(body_xquat) for i in range(self.n_prev)]
-            self.prev_action = [np.zeros(12) for i in range(self.n_prev)] ## (12,)
+            self.prev_action = [np.zeros(self.action_length) for i in range(self.n_prev)] ## (12,)
         
         ## switch to new command
         if self.test:

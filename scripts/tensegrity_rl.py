@@ -21,6 +21,7 @@ from start_command_callback import StartCommandCallback
 from tensegrity_sim import TensegrityEnv
 from tensegrity_sim_direction import TensegrityEnvDirection
 from tensegrity_sim_limited_degree import TensegrityEnvLimitedDegree
+from tensegrity_sim_12actuators import TensegrityEnv12Actuators
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -40,7 +41,7 @@ def parser():
     parser.add_argument('--resume', action="store_true", help='resume the training')
     parser.add_argument('--ros', action="store_true", help='publish some info using ros when testing')
     parser.add_argument("--best_rate", type=float, default=0.0, help="if 0.0, choose best snapshot from all iterations")
-    parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree))]")
+    parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree)), 4(12actuators)]")
     return parser
 
 def make_env(max_step):
@@ -53,6 +54,8 @@ def make_env(max_step):
                 env = Monitor(TensegrityEnvDirection(test, ros, max_step, render_mode="human"))
             elif args.sim_env == 3:
                 env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step, render_mode="human"))
+            elif args.sim_env == 4:
+                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
                 env = Monitor(TensegrityEnv(test, ros, max_step))
@@ -60,6 +63,8 @@ def make_env(max_step):
                 env = Monitor(TensegrityEnvDirection(test, ros, max_step))
             elif args.sim_env == 3:
                 env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step))
+            elif args.sim_env == 4:
+                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step))
         return env
     return _init
 
