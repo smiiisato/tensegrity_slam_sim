@@ -137,8 +137,8 @@ class TensegrityEnvDirection(TensegrityEnv):
         
         ## switch to new command
         if self.test:
-            self.command = 0
-            #self.command = np.random.uniform(-180, 180)
+            #self.command = 0
+            self.command = np.random.uniform(-180, 180)
         else:
             if self.randomize_command:
                 self.command = np.random.uniform(-self.max_degree, self.max_degree)
