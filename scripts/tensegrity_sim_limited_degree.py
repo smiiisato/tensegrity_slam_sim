@@ -5,85 +5,19 @@ import numpy as np
 from rospkg import RosPack
 from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
-from tensegrity_sim import TensegrityEnv
+from tensegrity_sim_direction import TensegrityEnvDirection
 
-class TensegrityEnvDirection(TensegrityEnv):
+class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
 
     def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
-        self.is_params_set = False
-        self.test = test
-        self.ros = ros
-        self.max_step = max_steps
-        
-        # flag for randomizing initial position
-        self.randomize_position = False
-
-        # flag for randomizing command
-        self.randomize_command = False
-
-        # control range
-        self.ctrl_max = [0]*24
-        self.ctrl_min = [-6.0]*24
-
-        # initial command, direction +x
-        self.command = 0
+        super(TensegrityEnvLimitedDegree, self).__init__(test, ros, max_steps, **kwargs)
         # max degree of command range
-        self.max_degree = 0
-
-        self.n_prev = 3
-        self.max_episode = 1000
-        self.max_command = 500
-
-        self.step_rate_max_cnt = 50000000
-        
-        self.current_body_xpos = None
-        self.current_body_xquat = None
-        self.prev_body_xpos = None
-        self.prev_body_xquat = None
-        self.prev_action = None
-        self.prev_command = None
-
-        self.episode_cnt = 0
-        self.step_cnt = 0
-        self.command_cnt = 0
-
-        if self.test:
-            self.default_step_rate = 0.5
-
-        if self.test and self.ros:
-            import rospy
-            from std_msgs.msg import Float32MultiArray
-            self.debug_msg = Float32MultiArray()
-            self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
-
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(156,)) ## (24 + 24 + 3) * n_prev + prev_command
-
-        self.rospack = RosPack()
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
-        MujocoEnv.__init__(
-            self, 
-            model_path, 
-            5,
-            observation_space=observation_space,
-            **kwargs
-            )
-        
-        utils.EzPickle.__init__(self)
-
-    def _get_obs(self):
-        return np.concatenate(
-            [
-                np.concatenate(self.prev_body_xquat),
-                np.concatenate(self.prev_action),
-                np.concatenate(self.prev_body_xpos),
-                self.prev_command,
-            ]
-        )
+        self.max_degree_range = 20
     
     def enlarge_command_space(self):
         ## enlarge command range: max[-180, 180]
         self.randomize_command = True
-        if self.max_degree < 180:
+        if self.max_degree < self.max_degree_range:
             self.max_degree += 20
         return
     
@@ -140,7 +74,7 @@ class TensegrityEnvDirection(TensegrityEnv):
         ## switch to new command
         if self.test:
             #self.command = 0
-            self.command = np.random.uniform(-180, 180)
+            self.command = np.random.uniform(-self.max_degree_range, self.max_degree_range)
         else:
             if self.randomize_command:
                 self.command = np.random.uniform(-self.max_degree, self.max_degree)
