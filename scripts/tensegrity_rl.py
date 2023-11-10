@@ -42,6 +42,7 @@ def parser():
     parser.add_argument('--ros', action="store_true", help='publish some info using ros when testing')
     parser.add_argument("--best_rate", type=float, default=0.0, help="if 0.0, choose best snapshot from all iterations")
     parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree)), 4(12actuators)]")
+    parser.add_argument("--load_step", type=int, default=None, help="load step")
     return parser
 
 def make_env(max_step):
@@ -100,19 +101,22 @@ def main():
             if args.iter is not None:
                 load_iter = args.iter
             else: # best iter is extracted
-                tlog_path = glob.glob(root_dir + "/../saved/PPO_{0}/events.out*".format(args.trial))[0]
-                tlog = EventAccumulator(tlog_path)
-                tlog.Reload()
+                if args.load_step is not None:
+                    load_step = args.load_step
+                else:
+                    tlog_path = glob.glob(root_dir + "/../saved/PPO_{0}/events.out*".format(args.trial))[0]
+                    tlog = EventAccumulator(tlog_path)
+                    tlog.Reload()
 
 
-                scalars = tlog.Scalars('rollout/ep_rew_mean')
-                rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
-                model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
-                n_all_iter = len(rew_data.iloc[args.save_interval-1::args.save_interval])
-                sorted_rew_data = (rew_data.iloc[args.save_interval-1::args.save_interval])[int(args.best_rate*n_all_iter):].sort_values(by="value")
-                print(sorted_rew_data)
-                load_iter = sorted_rew_data.tail(1).index[0]
-                load_step = sorted_rew_data.loc[load_iter, 'step']
+                    scalars = tlog.Scalars('rollout/ep_rew_mean')
+                    rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
+                    model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
+                    n_all_iter = len(rew_data.iloc[args.save_interval-1::args.save_interval])
+                    sorted_rew_data = (rew_data.iloc[args.save_interval-1::args.save_interval])[int(args.best_rate*n_all_iter):].sort_values(by="value")
+                    print(sorted_rew_data)
+                    load_iter = sorted_rew_data.tail(1).index[0]
+                    load_step = sorted_rew_data.loc[load_iter, 'step']
             weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(args.trial, load_step)
             print("load: {}".format(weight))
             model = model.load(weight, print_system_info=True)
