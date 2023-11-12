@@ -64,10 +64,10 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         utils.EzPickle.__init__(self)
     
     def reset_model(self):
-        if self.max_step:
-            self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
-        elif self.test:
+        if self.test or self.resume:
             self.step_rate = self.default_step_rate
+        elif self.max_step:
+            self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
         self.max_episode = 500 + 1500*self.step_rate
 
         qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,
