@@ -43,11 +43,12 @@ def parser():
     parser.add_argument("--best_rate", type=float, default=0.0, help="if 0.0, choose best snapshot from all iterations")
     parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree)), 4(12actuators)]")
     parser.add_argument("--load_step", type=int, default=None, help="load step")
+    parser.add_argument("--act_range", type=float, default=6.0, help="actuator control range")
     return parser
 
 def make_env(max_step, resume=False):
     args = parser().parse_args()
-    def _init(resume=resume, render=False, test=False, ros=False):
+    def _init(act_range=args.act_range, resume=resume, render=False, test=False, ros=False):
         if test:
             if args.sim_env == 1:
                 env = Monitor(TensegrityEnv(test, ros, max_step, render_mode="human"))
@@ -59,13 +60,13 @@ def make_env(max_step, resume=False):
                 env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
-                env = Monitor(TensegrityEnv(test, ros, max_step, resume))
+                env = Monitor(TensegrityEnv(test, ros, max_step, resume, act_range=act_range))
             elif args.sim_env == 2:
                 env = Monitor(TensegrityEnvDirection(test, ros, max_step, resume))
             elif args.sim_env == 3:
                 env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step, resume))
             elif args.sim_env == 4:
-                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, resume))
+                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, resume, act_range=act_range))
         assert env is not None, "env is None"
         return env
     return _init

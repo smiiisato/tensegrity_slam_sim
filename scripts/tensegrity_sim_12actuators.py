@@ -9,7 +9,7 @@ from tensegrity_sim import TensegrityEnv
 
 class TensegrityEnv12Actuators(TensegrityEnv):
 
-    def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
+    def __init__(self, act_range, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.action_length = 12
         self.is_params_set = False
         self.test = test
@@ -17,10 +17,11 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         self.max_step = max_steps
         self.step_rate_max_cnt = 50000000
         self.resume = resume
+        self.act_range = act_range
 
         # control range
         self.ctrl_max = [0]*self.action_length
-        self.ctrl_min = [-6.0]*self.action_length
+        self.ctrl_min = [-self.act_range]*self.action_length
 
         # initial command, direction +x
         self.command = 0
@@ -80,7 +81,7 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        if self.randomize_position:
+        if self.randomize_position or self.test:
             qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
