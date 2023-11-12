@@ -9,10 +9,15 @@ from tensegrity_sim_direction import TensegrityEnvDirection
 
 class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
 
-    def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
+    def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         super(TensegrityEnvLimitedDegree, self).__init__(test, ros, max_steps, **kwargs)
         # max degree of command range
         self.max_degree_range = 20
+        self.resume = resume
+        if self.resume:
+            print("resume")
+            self.max_degree = 20
+            self.randomize_command = True
     
     def enlarge_command_space(self):
         ## enlarge command range: max[-180, 180]
@@ -22,7 +27,9 @@ class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
         return
     
     def reset_model(self):
-        if self.max_step:
+        if self.resume:
+            self.step_rate = 1.0
+        elif self.max_step:
             self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
         elif self.test:
             self.step_rate = self.default_step_rate

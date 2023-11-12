@@ -17,12 +17,13 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         "render_fps": 100,
     }
 
-    def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
+    def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.is_params_set = False
         self.test = test
         self.ros = ros
         self.max_step = max_steps
         self.step_rate_max_cnt = 50000000
+        self.resume = resume
 
         # control range
         self.ctrl_max = [0]*24

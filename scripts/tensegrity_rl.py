@@ -45,9 +45,9 @@ def parser():
     parser.add_argument("--load_step", type=int, default=None, help="load step")
     return parser
 
-def make_env(max_step):
+def make_env(max_step, resume=False):
     args = parser().parse_args()
-    def _init(render=False, test=False, ros=False):
+    def _init(resume=resume, render=False, test=False, ros=False):
         if test:
             if args.sim_env == 1:
                 env = Monitor(TensegrityEnv(test, ros, max_step, render_mode="human"))
@@ -59,13 +59,14 @@ def make_env(max_step):
                 env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
-                env = Monitor(TensegrityEnv(test, ros, max_step))
+                env = Monitor(TensegrityEnv(test, ros, max_step, resume))
             elif args.sim_env == 2:
-                env = Monitor(TensegrityEnvDirection(test, ros, max_step))
+                env = Monitor(TensegrityEnvDirection(test, ros, max_step, resume))
             elif args.sim_env == 3:
-                env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step))
+                env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step, resume))
             elif args.sim_env == 4:
-                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step))
+                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, resume))
+        assert env is not None, "env is None"
         return env
     return _init
 
@@ -73,7 +74,9 @@ def main():
     args = parser().parse_args()
     set_random_seed(args.seed)
 
-    if args.what == "train":
+    if args.resume:
+        env = SubprocVecEnv([make_env(int(args.max_step/args.n_env), resume=True) for _ in range(args.n_env)])
+    elif args.what == "train":
         env = SubprocVecEnv([make_env(int(args.max_step/args.n_env)) for _ in range(args.n_env)])
     else:
         env = make_env(None)(render=args.render, test=True, ros=args.ros)
@@ -95,7 +98,7 @@ def main():
             tensorboard_log=root_dir+"/../saved")
 
     policy = None
-    if (args.what == "test") or args.resume:
+    if (args.what == "test"):
         if args.trial is not None:
             load_iter = None
             if args.iter is not None:
@@ -108,7 +111,6 @@ def main():
                     tlog = EventAccumulator(tlog_path)
                     tlog.Reload()
 
-
                     scalars = tlog.Scalars('rollout/ep_rew_mean')
                     rew_data = pd.DataFrame({"step": [s.step for s in scalars], "value": [s.value for s in scalars]})
                     model_list = sorted(glob.glob(root_dir + "/../saved/PPO_{0}/models/*".format(args.trial)), key=lambda x: int(re.findall(r'\d+', x)[-1]))
@@ -120,6 +122,14 @@ def main():
             weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(args.trial, load_step)
             print("load: {}".format(weight))
             model = model.load(weight, print_system_info=True)
+
+    if args.resume:
+        assert args.load_step is not None
+        assert args.trial is not None
+        trial = args.trial
+        weight = root_dir + "/../saved/PPO_{0}/models/model_{1}_steps".format(trial, args.load_step)
+        print("load: {}".format(weight))
+        model = model.load(weight, print_system_info=True, env=env)
 
     if args.what == "train":
         trial = get_latest_run_id(root_dir + "/../saved", "PPO") + 1

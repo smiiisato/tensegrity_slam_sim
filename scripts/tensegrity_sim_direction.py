@@ -9,11 +9,12 @@ from tensegrity_sim import TensegrityEnv
 
 class TensegrityEnvDirection(TensegrityEnv):
 
-    def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
+    def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.is_params_set = False
         self.test = test
         self.ros = ros
         self.max_step = max_steps
+        self.resume = resume
         
         # flag for randomizing initial position
         self.randomize_position = False
