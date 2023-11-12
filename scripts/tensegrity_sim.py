@@ -33,10 +33,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.command = 0
 
         # flag for randomizing initial position
-        if test:
-            self.randomize_position = True
-        else:
-            self.randomize_position = False
+        self.randomize_position = (self.resume or self.test)
 
         self.n_prev = 3
         self.max_episode = 1000
@@ -50,7 +47,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.episode_cnt = 0
         self.step_cnt = 0
 
-        if self.test:
+        if self.test or self.resume:
             self.default_step_rate = 0.5
 
         if self.test and self.ros:
@@ -191,10 +188,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         return
     
     def reset_model(self):
-        if self.max_step:
-            self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
-        elif self.test:
+        if self.test or self.resume:
             self.step_rate = self.default_step_rate
+        elif self.max_step:
+            self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
         self.max_episode = 500 + 1500*self.step_rate
 
         qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,

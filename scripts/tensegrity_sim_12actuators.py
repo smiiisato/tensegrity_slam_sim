@@ -9,13 +9,14 @@ from tensegrity_sim import TensegrityEnv
 
 class TensegrityEnv12Actuators(TensegrityEnv):
 
-    def __init__(self, test=False, ros=False, max_steps=None, **kwargs):
+    def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.action_length = 12
         self.is_params_set = False
         self.test = test
         self.ros = ros
         self.max_step = max_steps
         self.step_rate_max_cnt = 50000000
+        self.resume = resume
 
         # control range
         self.ctrl_max = [0]*self.action_length
@@ -25,7 +26,7 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         self.command = 0
 
         # flag for randomizing initial position
-        self.randomize_position = False
+        self.randomize_position = (self.resume or self.test)
 
         self.n_prev = 3
         self.max_episode = 1000
@@ -39,7 +40,7 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         self.episode_cnt = 0
         self.step_cnt = 0
 
-        if self.test:
+        if self.test or self.resume:
             self.default_step_rate = 0.5
 
         if self.test and self.ros:
