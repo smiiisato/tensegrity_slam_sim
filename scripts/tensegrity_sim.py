@@ -32,7 +32,10 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         self.command = 0
 
         # flag for randomizing initial position
-        self.randomize_position = False
+        if test:
+            self.randomize_position = True
+        else:
+            self.randomize_position = False
 
         self.n_prev = 3
         self.max_episode = 1000
@@ -121,13 +124,6 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
 
-        if self.test:
-            #print("forward_reward: {}".format(forward_reward))
-            #print("moving_reward: {}".format(moving_reward))
-            #print("ctrl_reward: {}".format(ctrl_reward))
-            #print("action: {}".format(action))
-            print("commmand: {}".format(self.command))
-
         self.episode_cnt += 1
         self.step_cnt += 1
 
@@ -210,7 +206,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        if self.randomize_position:
+        if self.randomize_position or self.test:
             qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
