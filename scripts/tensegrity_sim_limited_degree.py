@@ -10,7 +10,7 @@ from tensegrity_sim_direction import TensegrityEnvDirection
 class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
 
     def __init__(self, test=False, ros=False, max_steps=None, resume=False, **kwargs):
-        super(TensegrityEnvLimitedDegree, self).__init__(test, ros, max_steps, **kwargs)
+        super(TensegrityEnvLimitedDegree, self).__init__(test, ros, max_steps, resume=resume, **kwargs)
         # max degree of command range
         self.max_degree_range = 20
         self.resume = resume
@@ -27,12 +27,10 @@ class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
         return
     
     def reset_model(self):
-        if self.resume:
-            self.step_rate = 1.0
+        if self.test or self.resume:
+            self.step_rate = self.default_step_rate
         elif self.max_step:
             self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
-        elif self.test:
-            self.step_rate = self.default_step_rate
         self.max_episode = 500 + 1500*self.step_rate
 
         qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,

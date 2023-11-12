@@ -48,7 +48,7 @@ class TensegrityEnvDirection(TensegrityEnv):
         self.step_cnt = 0
         self.command_cnt = 0
 
-        if self.test:
+        if self.test or self.resume:
             self.default_step_rate = 0.5
 
         if self.test and self.ros:

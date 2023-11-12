@@ -134,7 +134,7 @@ def main():
     if args.what == "train":
         trial = get_latest_run_id(root_dir + "/../saved", "PPO") + 1
         save_freq = args.n_step*args.save_interval
-        reward_threshold_callback = RewardThresholdCallback(threshold=2000, env=env, model=model)
+        reward_threshold_callback = RewardThresholdCallback(threshold=1500, env=env, model=model)
         checkpoint_callback = CheckpointCallback(save_freq=save_freq, save_path=root_dir + "/../saved/PPO_{0}/models".format(trial), name_prefix='model')
         start_randomizing_callback = StartRandomizingCallback(threshold=200, env=env, model=model)
         start_command_callback = StartCommandCallback(threshold=100, env=env, model=model)
