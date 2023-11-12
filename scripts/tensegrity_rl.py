@@ -10,7 +10,7 @@ import torch
 from stable_baselines3 import PPO
 from stable_baselines3.ppo.policies import MlpPolicy
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.utils import set_random_seed, get_device, get_latest_run_id
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -46,27 +46,27 @@ def parser():
     parser.add_argument("--act_range", type=float, default=6.0, help="actuator control range")
     return parser
 
-def make_env(max_step, resume=False):
+def make_env(max_step, act_range, resume=False):
     args = parser().parse_args()
-    def _init(act_range=args.act_range, resume=resume, render=False, test=False, ros=False):
+    def _init(resume=resume, render=False, test=False, ros=False):
         if test:
             if args.sim_env == 1:
-                env = Monitor(TensegrityEnv(test, ros, max_step, render_mode="human"))
+                env = Monitor(TensegrityEnv(test=test, ros=ros, max_steps=max_step, render_mode="human"))
             elif args.sim_env == 2:
-                env = Monitor(TensegrityEnvDirection(test, ros, max_step, render_mode="human"))
+                env = Monitor(TensegrityEnvDirection(test=test, ros=ros, max_steps=max_step, render_mode="human"))
             elif args.sim_env == 3:
-                env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step, render_mode="human"))
+                env = Monitor(TensegrityEnvLimitedDegree(test=test, ros=ros, max_steps=max_step, render_mode="human"))
             elif args.sim_env == 4:
-                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, render_mode="human"))
+                env = Monitor(TensegrityEnv12Actuators(test=test, ros=ros, max_steps=max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
-                env = Monitor(TensegrityEnv(test, ros, max_step, resume, act_range=act_range))
+                env = Monitor(TensegrityEnv(test=test, ros=ros, max_step=max_step, resume=resume, act_range=act_range))
             elif args.sim_env == 2:
-                env = Monitor(TensegrityEnvDirection(test, ros, max_step, resume))
+                env = Monitor(TensegrityEnvDirection(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
             elif args.sim_env == 3:
-                env = Monitor(TensegrityEnvLimitedDegree(test, ros, max_step, resume))
+                env = Monitor(TensegrityEnvLimitedDegree(test=test, ros=ros, max_step=max_step, resume=resume, act_range=act_range))
             elif args.sim_env == 4:
-                env = Monitor(TensegrityEnv12Actuators(test, ros, max_step, resume, act_range=act_range))
+                env = Monitor(TensegrityEnv12Actuators(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
         assert env is not None, "env is None"
         return env
     return _init
@@ -76,9 +76,10 @@ def main():
     set_random_seed(args.seed)
 
     if args.resume:
-        env = SubprocVecEnv([make_env(int(args.max_step/args.n_env), resume=True) for _ in range(args.n_env)])
+        env = SubprocVecEnv([make_env(max_step=int(args.max_step/args.n_env), act_range=args.act_range, resume=True) for _ in range(args.n_env)])
     elif args.what == "train":
-        env = SubprocVecEnv([make_env(int(args.max_step/args.n_env)) for _ in range(args.n_env)])
+        #env = SubprocVecEnv([make_env(int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
+        env = DummyVecEnv([make_env(max_step=int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
     else:
         env = make_env(None)(render=args.render, test=True, ros=args.ros)
 

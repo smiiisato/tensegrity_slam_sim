@@ -9,7 +9,7 @@ from tensegrity_sim import TensegrityEnv
 
 class TensegrityEnvDirection(TensegrityEnv):
 
-    def __init__(self, act_range, test=False, ros=False, max_steps=None, resume=False, **kwargs):
+    def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.is_params_set = False
         self.test = test
         self.ros = ros

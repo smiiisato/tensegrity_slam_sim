@@ -9,7 +9,7 @@ from tensegrity_sim import TensegrityEnv
 
 class TensegrityEnv12Actuators(TensegrityEnv):
 
-    def __init__(self, act_range, test=False, ros=False, max_steps=None, resume=False, **kwargs):
+    def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.action_length = 12
         self.is_params_set = False
         self.test = test
@@ -18,6 +18,7 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         self.step_rate_max_cnt = 50000000
         self.resume = resume
         self.act_range = act_range
+        print("act_range: ", self.act_range)
 
         # control range
         self.ctrl_max = [0]*self.action_length
