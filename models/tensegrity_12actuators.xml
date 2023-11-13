@@ -14,7 +14,7 @@
 
       <!-- link -->
     <body name="link1" pos="-0.1 0 0">
-      <geom name="link1" type="box" size="0.01 0.0075 0.2" mass="0.1" rgba="1 0 0 1" pos="0 0 0"/>
+      <geom name="link1" type="box" size="0.01 0.0075 0.2" mass="0.3" rgba="1 0 0 1" pos="0 0 0"/>
       <joint name="link1" type="free"/>
       <site name="link1_top1" pos="0.005 0.005 0.2"/>
       <site name="link1_top2" pos="-0.005 0.005 0.2"/>
@@ -28,7 +28,7 @@
     </body>
 
     <body name="link2" pos="0.1 0 0">
-      <geom name="link2" type="box" size="0.01 0.0075 0.2" mass="0.1" rgba="1 1 0 1" pos="0 0 0"/>
+      <geom name="link2" type="box" size="0.01 0.0075 0.2" mass="0.3" rgba="1 1 0 1" pos="0 0 0"/>
       <joint name="link2" type="free"/>
       <site name="link2_top1" pos="0.005 0.005 0.2"/>
       <site name="link2_top2" pos="-0.005 0.005 0.2"/>
@@ -41,7 +41,7 @@
     </body>
 
     <body name="link3" pos="0 0.1 0">
-      <geom name="link3" type="box" size="0.2 0.01 0.0075" mass="0.1" rgba="0 1 0 1" pos="0 0 0"/>
+      <geom name="link3" type="box" size="0.2 0.01 0.0075" mass="0.3" rgba="0 1 0 1" pos="0 0 0"/>
       <joint name="link3" type="free"/>
       <site name="link3_top1" pos="0.2 0.005 0.005"/>
       <site name="link3_top2" pos="0.2 -0.005 0.005"/>
@@ -54,7 +54,7 @@
     </body>
 
     <body name="link4" pos="0 -0.1 0">
-      <geom name="link4" type="box" size="0.2 0.01 0.0075" mass="0.1" rgba="0 1 1 1" pos="0 0 0"/>
+      <geom name="link4" type="box" size="0.2 0.01 0.0075" mass="0.3" rgba="0 1 1 1" pos="0 0 0"/>
       <joint name="link4" type="free"/>
       <site name="link4_top1" pos="0.2 0.005 0.005"/>
       <site name="link4_top2" pos="0.2 -0.005 0.005"/>
@@ -67,7 +67,7 @@
     </body>
 
     <body name="link5" pos="0 0 0.1">
-      <geom name="link5" type="box" size="0.0075 0.2 0.01" mass="0.1" rgba="0 0 1 1" pos="0 0 0"/>
+      <geom name="link5" type="box" size="0.0075 0.2 0.01" mass="0.3" rgba="0 0 1 1" pos="0 0 0"/>
       <joint name="link5" type="free"/>
       <site name="link5_top1" pos="0.005 0.2 0.005"/>
       <site name="link5_top2" pos="0.005 0.2 -0.005"/>
@@ -80,7 +80,7 @@
     </body>
 
     <body name="link6" pos="0 0 -0.1">
-      <geom name="link6" type="box" size="0.0075 0.2 0.01" mass="0.1" rgba="1 0 1 1" pos="0 0 0"/>
+      <geom name="link6" type="box" size="0.0075 0.2 0.01" mass="0.3" rgba="1 0 1 1" pos="0 0 0"/>
       <joint name="link6" type="free"/>
       <site name="link6_top" pos="0.0 0.2 0.0"/>
       <site name="link6_top1" pos="0.005 0.2 0.005"/>
