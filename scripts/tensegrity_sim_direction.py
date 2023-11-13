@@ -15,6 +15,7 @@ class TensegrityEnvDirection(TensegrityEnv):
         self.ros = ros
         self.max_step = max_steps
         self.resume = resume
+        self.act_range = act_range
         
         # flag for randomizing initial position
         self.randomize_position = False

@@ -10,7 +10,7 @@ from tensegrity_sim_direction import TensegrityEnvDirection
 class TensegrityEnvLimitedDegree(TensegrityEnvDirection):
 
     def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
-        super(TensegrityEnvLimitedDegree, self).__init__(test, ros, max_steps, resume=resume, **kwargs)
+        super(TensegrityEnvLimitedDegree, self).__init__(act_range=act_range, test=test, ros=ros, max_steps=max_steps, resume=resume, **kwargs)
         # max degree of command range
         self.max_degree_range = 20
         self.resume = resume

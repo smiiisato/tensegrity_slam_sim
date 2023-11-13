@@ -46,7 +46,7 @@ def parser():
     parser.add_argument("--act_range", type=float, default=6.0, help="actuator control range")
     return parser
 
-def make_env(max_step, act_range, resume=False):
+def make_env(max_step, act_range=6.0, resume=False):
     args = parser().parse_args()
     def _init(resume=resume, render=False, test=False, ros=False):
         if test:
@@ -78,8 +78,8 @@ def main():
     if args.resume:
         env = SubprocVecEnv([make_env(max_step=int(args.max_step/args.n_env), act_range=args.act_range, resume=True) for _ in range(args.n_env)])
     elif args.what == "train":
-        #env = SubprocVecEnv([make_env(int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
-        env = DummyVecEnv([make_env(max_step=int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
+        env = SubprocVecEnv([make_env(int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
+        #env = DummyVecEnv([make_env(max_step=int(args.max_step/args.n_env), act_range=args.act_range) for _ in range(args.n_env)])
     else:
         env = make_env(None)(render=args.render, test=True, ros=args.ros)
 
