@@ -118,7 +118,7 @@ class TensegrityEnvVelocity(TensegrityEnv):
                     self.data.qvel[30:32],
                     ))
         self.current_body_xyvel = np.mean(body_xyvel, axis=0) ## (6,)
-        print(self.current_body_xyvel)
+        #print(self.current_body_xyvel)
 
         forward_reward = 0
         moving_reward = 0
