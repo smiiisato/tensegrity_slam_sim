@@ -128,12 +128,17 @@ class TensegrityEnvVelocity(TensegrityEnv):
             if np.dot(self.current_body_xyvel, self.command) > np.linalg.norm(self.command):
                 forward_reward = 1.0
             else:
-                forward_reward = np.exp(-(np.dot(self.current_body_xyvel, self.command) - np.linalg.norm(self.command))**2)
+                forward_reward = np.exp(-20*(np.dot(self.current_body_xyvel, self.command) - np.linalg.norm(self.command))**2)
         else:
             raise ValueError("command is not set")
         #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
+        print("reward: ", reward)
+
+        if self.test:
+            print("forward_reward: ", forward_reward)
+            print("current_body_xyvel: ", self.current_body_xyvel)
 
         self.episode_cnt += 1
         self.step_cnt += 1
