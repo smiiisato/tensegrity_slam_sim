@@ -54,9 +54,11 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(117,)) ## (24 + 12 + 3) * n_prev
 
         self.rospack = RosPack()
-        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators.xml'
+        
+        ## change this to your own model path
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators.xml'
         #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators_less_friction.xml'
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators_harder.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators_harder.xml'
         MujocoEnv.__init__(
             self, 
             model_path, 

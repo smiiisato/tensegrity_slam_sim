@@ -14,7 +14,7 @@
 
       <!-- link -->
     <body name="link1" pos="-0.1 0 0">
-      <geom name="link1" type="box" size="0.01 0.0075 0.2" mass="0.3" rgba="1 0 0 1" pos="0 0 0"/>
+      <geom name="link1" type="box" size="0.01 0.0075 0.2" mass="0.1" rgba="1 0 0 1" pos="0 0 0"/>
       <joint name="link1" type="free"/>
       <site name="link1_top1" pos="0.005 0.005 0.2"/>
       <site name="link1_top2" pos="-0.005 0.005 0.2"/>
@@ -28,7 +28,7 @@
     </body>
 
     <body name="link2" pos="0.1 0 0">
-      <geom name="link2" type="box" size="0.01 0.0075 0.2" mass="0.3" rgba="1 1 0 1" pos="0 0 0"/>
+      <geom name="link2" type="box" size="0.01 0.0075 0.2" mass="0.1" rgba="1 1 0 1" pos="0 0 0"/>
       <joint name="link2" type="free"/>
       <site name="link2_top1" pos="0.005 0.005 0.2"/>
       <site name="link2_top2" pos="-0.005 0.005 0.2"/>
@@ -41,7 +41,7 @@
     </body>
 
     <body name="link3" pos="0 0.1 0">
-      <geom name="link3" type="box" size="0.2 0.01 0.0075" mass="0.3" rgba="0 1 0 1" pos="0 0 0"/>
+      <geom name="link3" type="box" size="0.2 0.01 0.0075" mass="0.1" rgba="0 1 0 1" pos="0 0 0"/>
       <joint name="link3" type="free"/>
       <site name="link3_top1" pos="0.2 0.005 0.005"/>
       <site name="link3_top2" pos="0.2 -0.005 0.005"/>
@@ -54,7 +54,7 @@
     </body>
 
     <body name="link4" pos="0 -0.1 0">
-      <geom name="link4" type="box" size="0.2 0.01 0.0075" mass="0.3" rgba="0 1 1 1" pos="0 0 0"/>
+      <geom name="link4" type="box" size="0.2 0.01 0.0075" mass="0.1" rgba="0 1 1 1" pos="0 0 0"/>
       <joint name="link4" type="free"/>
       <site name="link4_top1" pos="0.2 0.005 0.005"/>
       <site name="link4_top2" pos="0.2 -0.005 0.005"/>
@@ -67,7 +67,7 @@
     </body>
 
     <body name="link5" pos="0 0 0.1">
-      <geom name="link5" type="box" size="0.0075 0.2 0.01" mass="0.3" rgba="0 0 1 1" pos="0 0 0"/>
+      <geom name="link5" type="box" size="0.0075 0.2 0.01" mass="0.1" rgba="0 0 1 1" pos="0 0 0"/>
       <joint name="link5" type="free"/>
       <site name="link5_top1" pos="0.005 0.2 0.005"/>
       <site name="link5_top2" pos="0.005 0.2 -0.005"/>
@@ -80,7 +80,7 @@
     </body>
 
     <body name="link6" pos="0 0 -0.1">
-      <geom name="link6" type="box" size="0.0075 0.2 0.01" mass="0.3" rgba="1 0 1 1" pos="0 0 0"/>
+      <geom name="link6" type="box" size="0.0075 0.2 0.01" mass="0.1" rgba="1 0 1 1" pos="0 0 0"/>
       <joint name="link6" type="free"/>
       <site name="link6_top" pos="0.0 0.2 0.0"/>
       <site name="link6_top1" pos="0.005 0.2 0.005"/>
@@ -102,7 +102,7 @@
       <site site="link1_top2"/>
       <site site="link3_bottom2"/>
     </spatial>
-    <spatial name="link1t_4b" class="tendon_spatial">
+    <spatial name="link1t_4b" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link1_top3"/>
       <site site="link4_bottom1"/>
     </spatial>
@@ -110,23 +110,23 @@
       <site site="link1_bottom2"/>
       <site site="link3_bottom3"/>
     </spatial>
-    <spatial name="link1b_4b" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link1b_4b" class="tendon_spatial">
       <site site="link1_bottom3"/>
       <site site="link4_bottom4"/>
     </spatial>
-    <spatial name="link1b_6t" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link1b_6t" class="tendon_spatial">
       <site site="link1_bottom1"/>
       <site site="link6_top3"/>
     </spatial>
-    <spatial name="link1b_6b" class="tendon_spatial">
+    <spatial name="link1b_6b" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link1_bottom4"/>
       <site site="link6_bottom3"/>
     </spatial>
-    <spatial name="link1t_5t" class="tendon_spatial">
+    <spatial name="link1t_5t" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link1_top1"/>
       <site site="link5_top4"/>
     </spatial>
-    <spatial name="link1t_5b" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link1t_5b" class="tendon_spatial">
       <site site="link1_top4"/>
       <site site="link5_bottom4"/>
     </spatial>
@@ -136,7 +136,7 @@
       <site site="link2_top1"/>
       <site site="link3_top2"/>
     </spatial>
-    <spatial name="link2t_4t" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link2t_4t" class="tendon_spatial">
       <site site="link2_top4"/>
       <site site="link4_top1"/>
     </spatial>
@@ -144,7 +144,7 @@
       <site site="link2_bottom1"/>
       <site site="link3_top3"/>
     </spatial>
-    <spatial name="link2b_4t" class="tendon_spatial">
+    <spatial name="link2b_4t" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link2_bottom4"/>
       <site site="link4_top4"/>
     </spatial>
@@ -166,11 +166,11 @@
     </spatial>
 
     <!-- link3 -->
-    <spatial name="link3t_5t" class="tendon_spatial">
+    <spatial name="link3t_5t" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link3_top1"/>
       <site site="link5_top2"/>
     </spatial>
-    <spatial name="link3b_5t" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link3b_5t" class="tendon_spatial">
       <site site="link3_bottom1"/>
       <site site="link5_top3"/>
     </spatial>
@@ -192,11 +192,11 @@
       <site site="link4_bottom2"/>
       <site site="link5_bottom3"/>
     </spatial>
-    <spatial name="link4t_6b" class="tendon_spatial" rgba="0 0 0 1">
+    <spatial name="link4t_6b" class="tendon_spatial">
       <site site="link4_top3"/>
       <site site="link6_bottom1"/>
     </spatial>
-    <spatial name="link4b_6b" class="tendon_spatial">
+    <spatial name="link4b_6b" class="tendon_spatial" rgba="0 0 0 1">
       <site site="link4_bottom3"/>
       <site site="link6_bottom4"/>
     </spatial>
@@ -205,17 +205,17 @@
   <actuator>
     <!-- tention-controlled actuators-->
     <general name="link1t_3b" tendon="link1t_3b"  class="tendon_actuator"/>
-    <general name="link1b_4b" tendon="link1b_4b"  class="tendon_actuator"/>
-    <general name="link1b_6t" tendon="link1b_6t"  class="tendon_actuator"/> 
-    <general name="link1t_5b" tendon="link1t_5b"  class="tendon_actuator"/>
-    <general name="link2t_4t" tendon="link2t_4t"  class="tendon_actuator"/>
+    <general name="link1b_4b" tendon="link1t_4b"  class="tendon_actuator"/>
+    <general name="link1b_6t" tendon="link1b_6b"  class="tendon_actuator"/> 
+    <general name="link1t_5b" tendon="link1t_5t"  class="tendon_actuator"/>
+    <general name="link2t_4t" tendon="link2b_4t"  class="tendon_actuator"/>
     <general name="link2b_3t" tendon="link2b_3t"  class="tendon_actuator"/>
     <general name="link2b_6b" tendon="link2b_6b"  class="tendon_actuator"/>
     <general name="link2t_5t" tendon="link2t_5t"  class="tendon_actuator"/>
-    <general name="link3b_5t" tendon="link3b_5t"  class="tendon_actuator"/>
+    <general name="link3b_5t" tendon="link3t_5t"  class="tendon_actuator"/>
     <general name="link3t_6t" tendon="link3t_6t"  class="tendon_actuator"/>
     <general name="link4b_5b" tendon="link4b_5b"  class="tendon_actuator"/>
-    <general name="link4t_6b" tendon="link4t_6b"  class="tendon_actuator"/>
+    <general name="link4t_6b" tendon="link4b_6b"  class="tendon_actuator"/>
     
   </actuator>
 
