@@ -5,48 +5,51 @@ import numpy as np
 from rospkg import RosPack
 from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
+from tensegrity_sim import TensegrityEnv
 
-class TensegrityEnv(MujocoEnv, utils.EzPickle):
-
-    metadata = {
-        "render_modes": [
-            "human",
-            "rgb_array",
-            "depth_array",
-        ],
-        "render_fps": 100,
-    }
+class TensegrityEnvVelocity(TensegrityEnv):
 
     def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.is_params_set = False
         self.test = test
         self.ros = ros
         self.max_step = max_steps
-        self.step_rate_max_cnt = 50000000
         self.resume = resume
         self.act_range = act_range
+        
+        # flag for randomizing initial position
+        self.randomize_position = False
+
+        # flag for randomizing command
+        self.randomize_command = False
 
         # control range
         self.ctrl_max = [0]*24
-        self.ctrl_min = [-self.act_range]*24
+        self.ctrl_min = [-act_range]*24
 
         # initial command, direction +x
-        self.command = 0
-
-        # flag for randomizing initial position
-        self.randomize_position = (self.resume or self.test)
+        self.command = np.array([0.5, 0])
+        # max degree of command range
+        self.max_degree = 0
 
         self.n_prev = 3
         self.max_episode = 1000
+        self.max_command = 500
+
+        self.step_rate_max_cnt = 50000000
         
         self.current_body_xpos = None
         self.current_body_xquat = None
+        self.current_body_xyvel = None
         self.prev_body_xpos = None
         self.prev_body_xquat = None
+        self.prev_body_xyvel = None
         self.prev_action = None
+        self.prev_command = None
 
         self.episode_cnt = 0
         self.step_cnt = 0
+        self.command_cnt = 0
 
         if self.test or self.resume:
             self.default_step_rate = 0.5
@@ -57,7 +60,7 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(153,)) ## (24 + 24 + 3) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(159,)) ## (24 + 24 + 3) * n_prev + prev_command = 
 
         self.rospack = RosPack()
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene.xml'
@@ -70,10 +73,6 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
             )
         
         utils.EzPickle.__init__(self)
-
-    def set_param(self):
-        if self.test:
-            self.mujoco_renderer.viewer._render_every_frame = False
 
     def step(self, action): ## action: (24,) tention of each cable
         if not self.is_params_set:
@@ -110,18 +109,36 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                     self.data.xquat[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
                     ])
         self.current_body_xquat = copy.deepcopy(body_xquat) ## (24,)
+        body_xyvel = np.vstack((
+                    self.data.qvel[0:2],
+                    self.data.qvel[6:8],
+                    self.data.qvel[12:14],
+                    self.data.qvel[18:20],
+                    self.data.qvel[24:26],
+                    self.data.qvel[30:32],
+                    ))
+        self.current_body_xyvel = np.mean(body_xyvel, axis=0) ## (6,)
+        #print(self.current_body_xyvel)
 
         forward_reward = 0
         moving_reward = 0
         ctrl_reward = 0
         # reward
         if self.command is not None:
-            forward_reward = 100.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[-1][:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
+            if np.dot(self.current_body_xyvel, self.command) > np.linalg.norm(self.command):
+                forward_reward = 1.0
+            else:
+                forward_reward = np.exp(-20*(np.dot(self.current_body_xyvel, self.command) - np.linalg.norm(self.command))**2)
         else:
             raise ValueError("command is not set")
-        moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
+        #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         reward = forward_reward + moving_reward + ctrl_reward
+        print("reward: ", reward)
+
+        if self.test:
+            print("forward_reward: ", forward_reward)
+            print("current_body_xyvel: ", self.current_body_xyvel)
 
         self.episode_cnt += 1
         self.step_cnt += 1
@@ -165,34 +182,29 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                 reward_ctrl=ctrl_reward,
                 )
             )
-    
+
     def _get_obs(self):
         return np.concatenate(
             [
                 np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
-                np.concatenate(self.prev_body_xpos)
+                np.concatenate(self.prev_body_xpos),
+                np.concatenate(self.prev_command),
             ]
         )
     
-    def _set_action_space(self):
-        low = np.asarray(self.ctrl_min)
-        high = np.asarray(self.ctrl_max)
-        self.action_space = spaces.Box(low, high, dtype=np.float32)
-        return self.action_space
-    
-    def start_randomizing_position(self):
-        self.randomize_position = True
-        return
-
     def enlarge_command_space(self):
+        ## enlarge command range: max[-180, 180]
+        self.randomize_command = True
+        if self.max_degree < 180:
+            self.max_degree += 20
         return
     
     def reset_model(self):
-        if self.test or self.resume:
-            self.step_rate = self.default_step_rate
-        elif self.max_step:
+        if self.max_step:
             self.step_rate = min(float(self.step_cnt)/self.step_rate_max_cnt, 1)
+        elif self.test:
+            self.step_rate = self.default_step_rate
         self.max_episode = 500 + 1500*self.step_rate
 
         qpos = np.array([-0.1, 0, 0.0, 1.0, 0, 0, 0,
@@ -237,10 +249,19 @@ class TensegrityEnv(MujocoEnv, utils.EzPickle):
                         ])
             self.prev_body_xquat = [copy.deepcopy(body_xquat) for i in range(self.n_prev)]
             self.prev_action = [np.zeros(24) for i in range(self.n_prev)] ## (24,)
-
-            if self.command is None:
-                self.command = 0
+        
+        ## switch to new command
+        if self.test:
+            #self.command = 0
+            self.command = np.array([0.5, 0])
+        else:
+            if self.randomize_command:
+                #self.command = np.array([np.random.uniform(-0.8, 0.8), np.random.uniform(-0.8, 0.8)])
+                self.command = np.array([0.5, 0])
+            else:
+                self.command = np.array([0.5, 0])
+        
+        self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
+        print("command: ", self.command)
 
         return self._get_obs()
-
-        
