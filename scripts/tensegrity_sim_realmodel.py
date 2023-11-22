@@ -7,7 +7,7 @@ from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 
-class TensegrityEnv12Actuators(TensegrityEnv):
+class TensegrityEnvRealmodel(TensegrityEnv):
 
     def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.action_length = 12
@@ -56,10 +56,7 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         self.rospack = RosPack()
         
         ## change this to your own model path
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators.xml'
-        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model.xml'
-        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators_less_friction.xml'
-        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_12actuators_harder.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model.xml'
         MujocoEnv.__init__(
             self, 
             model_path, 
@@ -101,12 +98,12 @@ class TensegrityEnv12Actuators(TensegrityEnv):
         if (self.prev_body_xquat is None) and (self.prev_action is None):
             self.current_qvel = self.data.qvel.flat[:]
             body_xpos = np.vstack((
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link1")]],
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link2")]],
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link3")]],
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link4")]],
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link5")]],
-                    self.data.xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link1")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link2")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link3")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link4")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link5")]],
+                    self.data.geom_xpos[self.model.body_geomadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")]],
                     ))
             self.prev_body_xpos = [np.mean(body_xpos, axis=0) for i in range(self.n_prev)]
             body_xquat = np.concatenate([

@@ -23,6 +23,7 @@ from tensegrity_sim_direction import TensegrityEnvDirection
 from tensegrity_sim_limited_degree import TensegrityEnvLimitedDegree
 from tensegrity_sim_12actuators import TensegrityEnv12Actuators
 from tensegrity_sim_velocity import TensegrityEnvVelocity
+from tensegrity_sim_realmodel import TensegrityEnvRealmodel
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -42,7 +43,7 @@ def parser():
     parser.add_argument('--resume', action="store_true", help='resume the training')
     parser.add_argument('--ros', action="store_true", help='publish some info using ros when testing')
     parser.add_argument("--best_rate", type=float, default=0.0, help="if 0.0, choose best snapshot from all iterations")
-    parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree)), 4(12actuators), 5(velocity)]")
+    parser.add_argument("--sim_env", type=int, default=1, help="simulation environment: [1(normal), 2(direction), 3(limited_degree)), 4(12actuators), 5(velocity), 6(realmodel)]")
     parser.add_argument("--load_step", type=int, default=None, help="load step")
     parser.add_argument("--act_range", type=float, default=6.0, help="actuator control range")
     return parser
@@ -61,6 +62,8 @@ def make_env(max_step, act_range=6.0, resume=False):
                 env = Monitor(TensegrityEnv12Actuators(test=test, ros=ros, max_steps=max_step, render_mode="human"))
             elif args.sim_env == 5:
                 env = Monitor(TensegrityEnvVelocity(test=test, ros=ros, max_steps=max_step, render_mode="human"))
+            elif args.sim_env == 6:
+                env = Monitor(TensegrityEnvRealmodel(test=test, ros=ros, max_steps=max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
                 env = Monitor(TensegrityEnv(test=test, ros=ros, max_step=max_step, resume=resume, act_range=act_range))
@@ -72,6 +75,8 @@ def make_env(max_step, act_range=6.0, resume=False):
                 env = Monitor(TensegrityEnv12Actuators(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
             elif args.sim_env == 5:
                 env = Monitor(TensegrityEnvVelocity(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
+            elif args.sim_env == 6:
+                env = Monitor(TensegrityEnvRealmodel(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
         assert env is not None, "env is None"
         return env
     return _init
