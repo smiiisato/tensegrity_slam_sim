@@ -4,13 +4,13 @@
   <default>
     <site size="0.005" rgba="1 1 1 1"/>
     <default class="tendon_actuator">
-      <general ctrllimited="true" ctrlrange="-50.0 0" dyntype="filter" dynprm="0.02"/> <!-- for real2sim -->
+      <general ctrllimited="true" ctrlrange="-18.0 0" dyntype="filter" dynprm="0.02"/> <!-- for real2sim -->
     </default>
     <default class="tendon_spatial">
-      <tendon damping="5" stiffness="50" frictionloss="0.5"/>
+      <tendon damping="5" stiffness="200" frictionloss="0.5"/>
     </default>
     <default class="tendon_spatial_static">
-      <tendon damping="5" stiffness="500" frictionloss="0.5"/>
+      <tendon damping="5" stiffness="200" frictionloss="0.5"/>
     </default>
   </default>
   <worldbody>
@@ -20,7 +20,7 @@
     <body name="link1" pos="-0.125 0 0">
       <geom name="link1" type="cylinder" size="0.01 0.25" mass="0.06" rgba="1 0 0 1" pos="0 0 0"/>
       <body pos="0 0 0" name="actuator1">
-        <geom name="actuator1" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator1" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
       </body>
       <body pos="0 0 0" name="sphere_1t">
         <geom name="sphere_1t" type="sphere" size="0.015" mass="0.05" pos="0.0 0.0 0.25"/>
@@ -44,7 +44,7 @@
     <body name="link2" pos="0.125 0 0">
       <geom name="link2" type="cylinder" size="0.01 0.25" mass="0.06" rgba="1 1 0 1" pos="0 0 0"/>
       <body pos="0 0 0" name="actuator2">
-        <geom name="actuator2" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator2" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
         </body>
         <body pos="0 0 0" name="sphere_2t">
         <geom name="sphere_2t" type="sphere" size="0.015" mass="0.05" pos="0.0 0.0 0.25"/>
@@ -66,7 +66,7 @@
     <body name="link3" pos="0 0.125 0">
       <geom name="link3" type="cylinder" mass="0.06" rgba="0 1 0 1" fromto="-0.25 0 0 0.25 0 0" size="0.01 0.25"/>
       <body pos="0 0 0" name="actuator3">
-        <geom name="actuator3" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator3" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
         </body>
         <body pos="0 0 0" name="sphere_3t">
         <geom name="sphere_3t" type="sphere" size="0.015" mass="0.05" pos="0.25 0.0 0.0"/>
@@ -88,7 +88,7 @@
     <body name="link4" pos="0 -0.125 0">
       <geom name="link4" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 1 1 1" fromto="-0.25 0 0 0.25 0 0"/>
       <body pos="0 0 0" name="actuator4">
-        <geom name="actuator4" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator4" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
         </body>
         <body pos="0 0 0" name="sphere_4t">
         <geom name="sphere_4t" type="sphere" size="0.015" mass="0.05" pos="0.25 0.0 0.0"/>
@@ -110,7 +110,7 @@
     <body name="link5" pos="0 0 0.125">
       <geom name="link5" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 0 1 1" fromto="0 -0.25 0 0 0.25 0"/>
       <body pos="0 0 0" name="actuator5">
-        <geom name="actuator5" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator5" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
         </body>
         <body pos="0 0 0" name="sphere_5t">
         <geom name="sphere_5t" type="sphere" size="0.015" mass="0.05" pos="0.0 0.25 0.0"/>
@@ -132,7 +132,7 @@
     <body name="link6" pos="0 0 -0.125">
       <geom name="link6" type="cylinder" size="0.01 0.25" mass="0.1" rgba="1 0 1 1" fromto="0 -0.25 0 0 0.25 0"/>
       <body pos="0 0 0" name="actuator6">
-      <geom name="actuator6" type="box" size="0.015 0.05 0.032" mass="0.2" pos="0 0 0"/>
+      <geom name="actuator6" type="box" size="0.015 0.05 0.032" mass="0.5" pos="0 0 0"/>
         </body>
         <body pos="0 0 0" name="sphere_6t">
       <geom name="sphere_6t" type="sphere" size="0.015" mass="0.05" pos="0.0 0.25 0.0"/>

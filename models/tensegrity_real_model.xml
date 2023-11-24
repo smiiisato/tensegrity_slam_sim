@@ -9,7 +9,7 @@
       <tendon damping="5" stiffness="50" frictionloss="0.5"/>
     </default>
     <default class="tendon_spatial_static">
-      <tendon damping="5" stiffness="500" frictionloss="0.5"/>
+      <tendon damping="5" stiffness="100" frictionloss="0.5"/>
     </default>
   </default>
   <worldbody>
@@ -52,7 +52,7 @@
 
     <body name="link3" pos="0 0.125 0">
       <geom name="link3" type="cylinder" mass="0.06" rgba="0 1 0 1" fromto="-0.25 0 0 0.25 0 0" size="0.01 0.25"/>
-        <geom name="actuator3" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator3" type="box" size="0.05 0.032 0.015" mass="0.2" pos="0 0 0"/>
         <geom name="sphere_3t" type="sphere" size="0.015" mass="0.05" pos="0.25 0.0 0.0"/>
         <geom name="sphere_3b" type="sphere" size="0.015" mass="0.05" pos="-0.25 0.0 0.0"/>
       <joint name="link3" type="free"/>
@@ -68,7 +68,7 @@
 
     <body name="link4" pos="0 -0.125 0">
       <geom name="link4" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 1 1 1" fromto="-0.25 0 0 0.25 0 0"/>
-        <geom name="actuator4" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator4" type="box" size="0.05 0.032 0.015" mass="0.2" pos="0 0 0"/>
         <geom name="sphere_4t" type="sphere" size="0.015" mass="0.05" pos="0.25 0.0 0.0"/>
         <geom name="sphere_4b" type="sphere" size="0.015" mass="0.05" pos="-0.25 0.0 0.0"/>
       <joint name="link4" type="free"/>
@@ -84,7 +84,7 @@
 
     <body name="link5" pos="0 0 0.125">
       <geom name="link5" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 0 1 1" fromto="0 -0.25 0 0 0.25 0"/>
-        <geom name="actuator5" type="box" size="0.032 0.015 0.05" mass="0.2" pos="0 0 0"/>
+        <geom name="actuator5" type="box" size="0.015 0.05 0.032" mass="0.2" pos="0 0 0"/>
         <geom name="sphere_5t" type="sphere" size="0.015" mass="0.05" pos="0.0 0.25 0.0"/>
         <geom name="sphere_5b" type="sphere" size="0.015" mass="0.05" pos="0.0 -0.25 0.0"/>
       <joint name="link5" type="free"/>

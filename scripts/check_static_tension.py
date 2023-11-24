@@ -6,11 +6,11 @@ import time
 
 # MJCFファイルのパス
 rospack = RosPack()
-model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model.xml'  
-#model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator.xml'  
+#model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model.xml'  
+model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator.xml'  
 
 tension_threshold = -50  # 張力のしきい値
-current_tension = 0  # アクチュエータの初期張力
+current_tension = -20  # アクチュエータの初期張力
 
 # モデルとシミュレーションのロード
 model = mujoco.MjModel.from_xml_path(model_path)
@@ -24,13 +24,22 @@ data.qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0
                 ])
 
-#for i in range(model.nu):
-#    data.ctrl[i] = current_tension
+for i in range(model.nu):
+    data.ctrl[i] = current_tension
 
 # Viewerの初期化
 viewer = mujoco_viewer.MujocoViewer(model, data)
 
 #data.xfrc_applied[:] = [0.1*np.random.randn(len(data.xfrc_applied[0])) for _ in range(len(data.xfrc_applied))]
+"""
+while True:
+    mujoco.mj_step(model, data)
+    viewer.render()
+    #time.sleep(0.01)
+    #print(data.actuator_force)
+    #print("tendon_length: ", data.ten_length)
+    print("ctrl: ", data.ctrl)
+"""
 
 ## PID control
 class PIDController:
@@ -60,7 +69,7 @@ class PIDController:
         self.previous_error = error
         return output
 
-pid = PIDController(1.0, 0.1, 0.05, 0.002)
+pid = PIDController(20.0, 0.1, 0.05, 0.002)
 
 
 while True:
@@ -74,6 +83,7 @@ while True:
     #print(data.actuator_force)
     #print("tendon_length: ", data.ten_length)
     print("ctrl: ", data.ctrl)
+
 
 """
 # シミュレーションループ
