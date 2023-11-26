@@ -30,7 +30,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         # flag for randomizing initial position
         self.randomize_position = (self.resume or self.test)
 
-        self.n_prev = 3
+        self.n_prev = 1
         self.max_episode = 1000
         
         self.current_body_xpos = None
@@ -42,8 +42,6 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         self.episode_cnt = 0
         self.step_cnt = 0
 
-        self.total_mass = 
-
         if self.test or self.resume:
             self.default_step_rate = 0.5
 
@@ -53,7 +51,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(153,)) ## (24 + 24 + 3) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(51,)) ## (24 + 24 + 3) * n_prev
 
         self.rospack = RosPack()
         
@@ -72,7 +70,126 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
     def step(self, action):
         if self.test:
             print("actuator force: ", action) ## (24,)
-        return super().step(action)
+        if not self.is_params_set:
+            self.set_param()
+            self.is_params_set = True
+
+        if self.prev_action is None:
+            self.prev_action = [copy.deepcopy(action) for i in range(self.n_prev)]
+
+        if self.prev_command is None:
+            self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
+
+        ## add noise to action
+        self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
+
+        # do simulation
+        self._step_mujoco_simulation(action, self.frame_skip)
+
+        body_xpos = np.vstack((
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link1")],
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link2")],
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link3")],
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link4")],
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link5")],
+                    self.data.geom_xpos[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "link6")],
+                    ))
+        self.current_body_xpos = np.mean(body_xpos, axis=0) ## (3,)
+        body_xquat = np.concatenate([
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link1")],
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link2")],
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link3")],
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link4")],
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link5")],
+                    self.data.xquat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")],
+                    ])
+        self.current_body_xquat = copy.deepcopy(body_xquat) ## (24,)
+        self.body_qvel = np.vstack([
+                    self.data.qvel[0:6],
+                    self.data.qvel[6:12],
+                    self.data.qvel[12:18],
+                    self.data.qvel[18:24],
+                    self.data.qvel[24:30],
+                    self.data.qvel[30:36],
+                    ])
+        forward_reward = 0
+        moving_reward = 0
+        ctrl_reward = 0
+        rotate_reward = 0
+        # reward
+
+        ## calculate angular momentum
+        angular_momentum = np.zeros(3)
+        self.com_qvel = np.mean(self.body_qvel, axis=0)[0:3]
+        self.com_xpos = self.current_body_xpos
+
+        for i in range(6):
+            body_mass = self.model.body_mass[i]
+            body_com_xpos = body_xpos[i]
+            body_vel = self.data.qvel[6*i:6*i+3]
+            angular_momentum += body_mass*np.cross(body_com_xpos-self.com_xpos, body_vel-self.com_qvel)
+        angular_momentum_size = np.linalg.norm(angular_momentum)
+        ## calculate rotate reward
+        rotate_reward = 5.0*angular_momentum_size
+        
+        ## calculate forward reward
+        if self.command is not None:
+            forward_reward = 10.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[-1][:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
+        else:
+            raise ValueError("command is not set")
+        
+        if self.test:
+            print("forward_reward: ", forward_reward)
+            print("rotate_reward: ", rotate_reward)
+        
+        ## calculate moving reward
+        #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
+        ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
+        reward = forward_reward + moving_reward + ctrl_reward + rotate_reward
+
+        self.episode_cnt += 1
+        self.step_cnt += 1
+
+        truncated = False
+        terminated = not (self.episode_cnt < self.max_episode)
+
+        self.prev_body_xpos.append(copy.deepcopy(self.current_body_xpos)) ## (3,)
+        if len(self.prev_body_xpos) > self.n_prev:
+            self.prev_body_xpos.pop(0)
+        self.prev_body_xquat.append(copy.deepcopy(self.current_body_xquat)) ## (24,)
+        if len(self.prev_body_xquat) > self.n_prev:
+            self.prev_body_xquat.pop(0)
+        if len(self.prev_body_xpos) > self.n_prev:
+            self.prev_body_xpos.pop(0)
+        self.prev_action.append(copy.deepcopy(action)) ## (24,)
+        if len(self.prev_action) > self.n_prev:
+            self.prev_action.pop(0)
+
+        ## observation
+        assert self.command is not None
+        assert self.prev_command is not None
+        obs = self._get_obs()
+        
+        if terminated or truncated:
+            self.episode_cnt = 0
+            self.current_body_xpos = None
+            self.prev_body_xpos = None
+            self.current_body_xquat = None
+            self.prev_body_xquat = None
+            self.prev_action = None
+
+        return (
+            obs,
+            reward,
+            terminated,
+            truncated,
+            dict(
+                reward_forward=forward_reward,
+                reward_moving=moving_reward,
+                reward_ctrl=ctrl_reward,
+                reward_rotate=rotate_reward,
+                )
+        )
     
     def reset_model(self):
         if self.test or self.resume:

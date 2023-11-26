@@ -25,6 +25,7 @@ from tensegrity_sim_12actuators import TensegrityEnv12Actuators
 from tensegrity_sim_velocity import TensegrityEnvVelocity
 from tensegrity_sim_realmodel import TensegrityEnvRealmodel
 from tensegrity_sim_realmodel_fullactuator import TensegrityEnvRealmodelFullactuator
+from tensegrity_sim_realmodel_fullactuator_angularmomentum import TensegrityEnvRealmodelFullactuatorAngularmomentum
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -67,6 +68,8 @@ def make_env(max_step, act_range=6.0, resume=False):
                 env = Monitor(TensegrityEnvRealmodel(test=test, ros=ros, max_steps=max_step, render_mode="human"))
             elif args.sim_env == 7:
                 env = Monitor(TensegrityEnvRealmodelFullactuator(test=test, ros=ros, max_steps=max_step, render_mode="human"))
+            elif args.sim_env == 8:
+                env = Monitor(TensegrityEnvRealmodelFullactuatorAngularmomentum(test=test, ros=ros, max_steps=max_step, render_mode="human"))
         else:
             if args.sim_env == 1:
                 env = Monitor(TensegrityEnv(test=test, ros=ros, max_step=max_step, resume=resume, act_range=act_range))
@@ -82,6 +85,8 @@ def make_env(max_step, act_range=6.0, resume=False):
                 env = Monitor(TensegrityEnvRealmodel(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
             elif args.sim_env == 7:
                 env = Monitor(TensegrityEnvRealmodelFullactuator(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
+            elif args.sim_env == 8:
+                env = Monitor(TensegrityEnvRealmodelFullactuatorAngularmomentum(test=test, ros=ros, max_steps=max_step, resume=resume, act_range=act_range))
         assert env is not None, "env is None"
         return env
     return _init
