@@ -7,7 +7,7 @@ from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 
-class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
+class TensegrityEnvRealmodelFullactuatorRoughterrain(TensegrityEnv):
 
     def __init__(self, act_range=6.0, test=False, ros=False, max_steps=None, resume=False, **kwargs):
         self.action_length = 24
@@ -56,7 +56,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         self.rospack = RosPack()
         
         ## change this to your own model path
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
         MujocoEnv.__init__(
             self, 
             model_path, 
