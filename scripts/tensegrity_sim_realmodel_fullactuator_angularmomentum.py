@@ -81,7 +81,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
 
         ## add noise to action
-        self.data.qfrc_applied[:] = 0.01*self.step_rat e*np.random.randn(len(self.data.qfrc_applied))
+        self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
 
         # do simulation
         self._step_mujoco_simulation(action, self.frame_skip)
@@ -126,17 +126,21 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         for i in range(6):
             body_mass = self.model.body_mass[i]
             body_com_xpos = body_xpos[i]
-            body_vel = self.data.qvel[6*i:6*i+3]
+            body_vel = self.body_qvel[i][0:3]
             angular_momentum += body_mass*np.cross(body_com_xpos-self.com_xpos, body_vel-self.com_qvel)
-        angular_momentum_size = np.linalg.norm(angular_momentum)
+        
+        ## desired angular momentum
+        if self.command is not None:
+            desired_angular_momentum = np.array([0.0, 0.02, 0.0])
+
         ## calculate rotate reward
-        rotate_reward = 1.0*angular_momentum_size
+        rotate_reward = -10.0*np.linalg.norm(np.array([1.0, 10.0, 1.0])*(angular_momentum-desired_angular_momentum))
         
         ## calculate forward reward
-        if self.command is not None:
-            forward_reward = 10.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[-1][:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
-        else:
-            raise ValueError("command is not set")
+        #if self.command is not None:
+        #    forward_reward = 10.0*np.dot(self.current_body_xpos[:2] - self.prev_body_xpos[-1][:2], np.array([np.cos(np.deg2rad(self.command)), np.sin(np.deg2rad(self.command))]))
+        #else:
+        #    raise ValueError("command is not set")
         
         if self.test:
             print("forward_reward: ", forward_reward)
@@ -144,10 +148,8 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         
         ## calculate moving reward
         #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
-        ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
-        print("forward_reward: ", forward_reward)
+        #ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         print("rotate_reward: ", rotate_reward)
-        print("ctrl_reward", ctrl_reward)
         reward = forward_reward + moving_reward + ctrl_reward + rotate_reward
 
         self.episode_cnt += 1
@@ -246,10 +248,10 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         
         ## switch to new command
         if self.test:
-            self.command = 0
+            self.command = [0.5, 0.0]
             #self.command = np.random.uniform(-180, 180)
         else:
-            self.command = 0
+            self.command = [0.5, 0.0]
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
 

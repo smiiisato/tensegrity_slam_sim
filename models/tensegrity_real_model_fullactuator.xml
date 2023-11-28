@@ -17,7 +17,7 @@
     <light pos="0 1 1" dir="0 -1 -1" diffuse="1 1 1"/>
 
       <!-- link -->
-    <body name="link1" pos="-0.125 0 0">
+    <body name="link1" pos="-0.125 0 0.25">
       <geom name="link1" type="cylinder" size="0.01 0.25" mass="0.06" rgba="1 0 0 1" pos="0 0 0"/>
       <body pos="0 0 0" name="actuator1">
         <geom name="actuator1" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
@@ -41,7 +41,7 @@
       <site name="imu" pos="0.0 0 0"/>
     </body>
 
-    <body name="link2" pos="0.125 0 0">
+    <body name="link2" pos="0.125 0 0.25">
       <geom name="link2" type="cylinder" size="0.01 0.25" mass="0.06" rgba="1 1 0 1" pos="0 0 0"/>
       <body pos="0 0 0" name="actuator2">
         <geom name="actuator2" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
@@ -63,7 +63,7 @@
       <site name="link2_bottom4" pos="0.005 -0.005 -0.24"/>
     </body>
 
-    <body name="link3" pos="0 0.125 0">
+    <body name="link3" pos="0 0.125 0.25">
       <geom name="link3" type="cylinder" mass="0.06" rgba="0 1 0 1" fromto="-0.25 0 0 0.25 0 0" size="0.01 0.25"/>
       <body pos="0 0 0" name="actuator3">
         <geom name="actuator3" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
@@ -85,7 +85,7 @@
       <site name="link3_bottom4" pos="-0.24 0.005 -0.005"/>
     </body>
 
-    <body name="link4" pos="0 -0.125 0">
+    <body name="link4" pos="0 -0.125 0.25">
       <geom name="link4" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 1 1 1" fromto="-0.25 0 0 0.25 0 0"/>
       <body pos="0 0 0" name="actuator4">
         <geom name="actuator4" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
@@ -107,7 +107,7 @@
       <site name="link4_bottom4" pos="-0.24 0.005 -0.005"/>
     </body>
 
-    <body name="link5" pos="0 0 0.125">
+    <body name="link5" pos="0 0 0.375">
       <geom name="link5" type="cylinder" size="0.01 0.25" mass="0.06" rgba="0 0 1 1" fromto="0 -0.25 0 0 0.25 0"/>
       <body pos="0 0 0" name="actuator5">
         <geom name="actuator5" type="box" size="0.032 0.015 0.05" mass="0.5" pos="0 0 0"/>
@@ -129,7 +129,7 @@
       <site name="link5_bottom4" pos="-0.005 -0.24 0.005"/>
     </body>
 
-    <body name="link6" pos="0 0 -0.125">
+    <body name="link6" pos="0 0 0.125">
       <geom name="link6" type="cylinder" size="0.01 0.25" mass="0.1" rgba="1 0 1 1" fromto="0 -0.25 0 0 0.25 0"/>
       <body pos="0 0 0" name="actuator6">
       <geom name="actuator6" type="box" size="0.015 0.05 0.032" mass="0.5" pos="0 0 0"/>
