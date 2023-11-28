@@ -32,7 +32,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
 
         self.n_prev = 1
         self.max_episode = 1000
-        
+    
         self.current_body_xpos = None
         self.current_body_xquat = None
         self.prev_body_xpos = None
@@ -81,7 +81,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             self.prev_command = [copy.deepcopy(self.command) for i in range(self.n_prev)]
 
         ## add noise to action
-        self.data.qfrc_applied[:] = 0.01*self.step_rate*np.random.randn(len(self.data.qfrc_applied))
+        self.data.qfrc_applied[:] = 0.01*self.step_rat e*np.random.randn(len(self.data.qfrc_applied))
 
         # do simulation
         self._step_mujoco_simulation(action, self.frame_skip)
@@ -144,7 +144,10 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         
         ## calculate moving reward
         #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
-        ##ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
+        ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
+        print("forward_reward: ", forward_reward)
+        print("rotate_reward: ", rotate_reward)
+        print("ctrl_reward", ctrl_reward)
         reward = forward_reward + moving_reward + ctrl_reward + rotate_reward
 
         self.episode_cnt += 1
