@@ -8,6 +8,7 @@ from matplotlib.animation import FuncAnimation
 
 average_velocity = np.zeros(6)
 angular_momentum = np.zeros(3)
+angular_momentum_2 = np.zeros(3)
 
 fig1, ax1 = plt.subplots()
 xdata1, ydata1 = [], []
@@ -16,17 +17,18 @@ ln1, = plt.plot([], [], 'r-', animated=True)
 def init1():
     ax1.set_xlim(0, 100)
     ax1.set_ylim(-4, 4)
+    ax1.set_ylabel("roll_velocity")
     return ln1,
 
 def update1(frame):
     xdata1.append(frame)
-    ydata1.append(average_velocity[0])
+    ydata1.append(average_velocity[3])
     ln1.set_data(xdata1, ydata1)
     return ln1,
 
 ani1 = FuncAnimation(fig1, update1, frames=np.linspace(0, 100, 1000),
                     init_func=init1, blit=True)
-"""
+
 fig2, ax2 = plt.subplots()
 xdata2, ydata2 = [], []
 ln2, = plt.plot([], [], 'r-', animated=True)
@@ -34,11 +36,12 @@ ln2, = plt.plot([], [], 'r-', animated=True)
 def init2():
     ax2.set_xlim(0, 100)
     ax2.set_ylim(-4, 4)
+    ax2.set_ylabel("pitch_velocity")
     return ln2,
 
 def update2(frame):
     xdata2.append(frame)
-    ydata2.append(average_velocity[1])
+    ydata2.append(average_velocity[4])
     ln2.set_data(xdata2, ydata2)
     return ln2,
 
@@ -52,18 +55,19 @@ ln3, = plt.plot([], [], 'r-', animated=True)
 def init3():
     ax3.set_xlim(0, 100)
     ax3.set_ylim(-4, 4)
+    ax3.set_ylabel("yaw_velocity")
     return ln3,
 
 def update3(frame):
     xdata3.append(frame)
-    ydata3.append(average_velocity[2])
+    ydata3.append(average_velocity[5])
     ln3.set_data(xdata3, ydata3)
     return ln3,
 
 ani3 = FuncAnimation(fig3, update3, frames=np.linspace(0, 100, 1000),
                     init_func=init3, blit=True)
-"""
 
+"""
 fig4, ax4 = plt.subplots()
 xdata4, ydata4 = [], []
 ln4, = plt.plot([], [], 'r-', animated=True)
@@ -83,7 +87,7 @@ def update4(frame):
 
 ani4 = FuncAnimation(fig4, update4, frames=np.linspace(0, 100, 1000),
                     init_func=init4, blit=True)
-
+"""
 fig5, ax5 = plt.subplots()
 xdata5, ydata5 = [], []
 ln5, = plt.plot([], [], 'r-', animated=True)
@@ -103,7 +107,7 @@ def update5(frame):
 
 ani5 = FuncAnimation(fig5, update5, frames=np.linspace(0, 100, 1000),
                     init_func=init5, blit=True)
-
+"""
 fig6, ax6 = plt.subplots()
 xdata6, ydata6 = [], []
 ln6, = plt.plot([], [], 'r-', animated=True)
@@ -123,6 +127,27 @@ def update6(frame):
 
 ani6 = FuncAnimation(fig6, update6, frames=np.linspace(0, 100, 1000),
                     init_func=init6, blit=True)
+"""
+fig7, ax7 = plt.subplots()
+xdata7, ydata7 = [], []
+ln7, = plt.plot([], [], 'r-', animated=True)
+
+def init7():
+    ax7.set_xlim(0, 100)
+    ax7.set_ylim(-0.1, 0.1)
+    ax7.set_xlabel("time [s]")
+    ax7.set_ylabel("angular momentum 2[y] [kg m^2/s]")
+    return ln7,
+
+def update7(frame):
+    xdata7.append(frame)
+    ydata7.append(angular_momentum_2[1])
+    ln7.set_data(xdata7, ydata7)
+    return ln7,
+
+ani7 = FuncAnimation(fig7, update7, frames=np.linspace(0, 100, 1000),
+                    init_func=init7, blit=True)
+
 
 # MJCFファイルのパス
 rospack = RosPack()
@@ -174,6 +199,7 @@ while viewer.is_running():
                     ))
     current_body_xpos = np.mean(body_xpos, axis=0) ## (3,)
     angular_momentum = np.zeros(3)
+    angular_momentum_2 = np.zeros(3)
     com_qvel = average_velocity[0:3]
     com_xpos = current_body_xpos
 
@@ -181,7 +207,9 @@ while viewer.is_running():
         body_mass = model.body_mass[i]
         body_com_xpos = body_xpos[i]
         body_vel = qvel[i][0:3]
-        angular_momentum += body_mass*np.cross(body_com_xpos-com_xpos, body_vel-com_qvel)
+        angular_momentum += body_mass*np.cross(body_com_xpos-com_xpos, body_vel-com_qvel) # m_i * (x_i-x_com) x (v_i-v_com)
+        angular_momentum_2 += body_mass*np.cross(body_com_xpos, body_vel) # m_i * (x_i) x 
+    angular_momentum_2 -= 6*body_mass*np.cross(com_xpos, com_qvel)
     print("angular_momentum: ", angular_momentum)
         
     """
