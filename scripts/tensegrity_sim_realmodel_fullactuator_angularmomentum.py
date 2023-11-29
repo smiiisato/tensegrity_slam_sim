@@ -6,6 +6,8 @@ from rospkg import RosPack
 from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
 
@@ -29,7 +31,8 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         self.local_command = None
 
         # flag for randomizing initial position
-        self.randomize_position = (self.resume or self.test)
+        #self.randomize_position = (self.resume or self.test)
+        self.randomize_position = False
 
         self.n_prev = 1
         self.max_episode = 1000
@@ -45,6 +48,57 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
 
         self.link1_xmat = None
 
+        ## reward initialization
+        self.forward_reward = 0
+        self.moving_reward = 0
+        self.ctrl_reward = 0
+        self.rotate_reward = 0
+        self.velocity_reward = 0
+
+
+        if self.test: ## plot reward for debugging
+            self.fig1, self.ax1 = plt.subplots()
+            self.xdata1, self.ydata1 = [], []
+            self.ln1, = plt.plot([], [], 'r-', animated=True)
+
+            def init1():
+                self.ax1.set_xlim(0, 100)
+                self.ax1.set_ylim(-2, 2)
+                self.ax1.set_xlabel("step")
+                self.ax1.set_ylabel("velocity_reward")
+                return self.ln1,
+
+            def update1(frame):
+                self.xdata1.append(frame)
+                self.ydata1.append(self.velocity_reward)
+                self.ln1.set_data(self.xdata1, self.ydata1)
+                return self.ln1,
+
+            self.ani1 = FuncAnimation(self.fig1, update1, frames=np.linspace(0, 100, 1000),
+                                 init_func=init1, blit=True)
+            
+            self.fig2, self.ax2 = plt.subplots()
+            self.xdata2, self.ydata2 = [], []
+            self.ln2, = plt.plot([], [], 'r-', animated=True)
+
+            def init2():
+                self.ax2.set_xlim(0, 100)
+                self.ax2.set_ylim(-2, 2)
+                self.ax2.set_xlabel("step")
+                self.ax2.set_ylabel("rotate_reward")
+                return self.ln2,
+    
+            def update2(frame):
+                self.xdata2.append(frame)
+                self.ydata2.append(self.rotate_reward)
+                self.ln2.set_data(self.xdata2, self.ydata2)
+                return self.ln2,
+                
+            self.ani2 = FuncAnimation(self.fig2, update2, frames=np.linspace(0, 100, 1000),
+                                    init_func=init2, blit=True)
+            
+            plt.show(block=False)
+
         if self.test or self.resume:
             self.default_step_rate = 0.5
 
@@ -54,7 +108,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(51,)) ## (24 + 24 + 3) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(27,)) ## (24 + 24 + 3) * n_prev
 
         self.rospack = RosPack()
         
@@ -115,12 +169,13 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
                     self.data.qvel[24:30],
                     self.data.qvel[30:36],
                     ])
-        forward_reward = 0
-        moving_reward = 0
-        ctrl_reward = 0
-        rotate_reward = 0
-        velocity_reward = 0
-        # reward
+        
+        # initialize reward
+        self.forward_reward = 0
+        self.moving_reward = 0
+        self.ctrl_reward = 0
+        self.rotate_reward = 0
+        self.velocity_reward = 0
 
         ## calculate angular momentum
         angular_momentum = np.zeros(3)
@@ -131,17 +186,17 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             body_mass = self.model.body_mass[i]
             body_com_xpos = body_xpos[i]
             body_vel = self.body_qvel[i][0:3]
-            angular_momentum += body_mass*np.cross(body_com_xpos-self.com_xpos, body_vel-self.com_qvel)
+            angular_momentum += body_mass*np.cross(body_com_xpos-self.com_xpos, body_vel-self.com_qvel) # m_i * ((r_i-r) x (v_i-v))
 
         ## calculate rotate reward
-        rotate_reward = 10.0*angular_momentum[2]
+        self.rotate_reward = 10.0*angular_momentum[2]
 
         ## calculate velocity reward
         desired_velocity = self.command[0:2]
         if np.dot(desired_velocity, self.com_qvel[0:2]) > np.square(desired_velocity).sum(): # if des_vel * com_vel > abs(des_vel)^2
-            velocity_reward = 1.0
+            self.velocity_reward = 1.0
         else:
-            velocity_reward = np.exp(-20.0*np.square(desired_velocity-self.com_qvel[0:2]).sum()) # exp(-20*||des_vel - com_vel||^2)
+            self.velocity_reward = np.exp(-20.0*np.square(desired_velocity-self.com_qvel[0:2]).sum()) # exp(-20*||des_vel - com_vel||^2)
 
         
         ## calculate forward reward
@@ -151,15 +206,20 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         #    raise ValueError("command is not set")
         
         if self.test:
-            print("forward_reward: ", forward_reward)
-            print("rotate_reward: ", rotate_reward)
+            print("rotate_reward: ", self.rotate_reward)
+            print("velocity_reward: ", self.velocity_reward)
+            ## draw reward for debugging
+            self.fig1.canvas.draw()
+            self.fig1.canvas.flush_events()
+            self.fig2.canvas.draw()
+            self.fig2.canvas.flush_events()
         
         ## calculate moving reward
         #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         #ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
-        print("rotate_reward: ", rotate_reward)
-        print("velocity_reward: ", velocity_reward)
-        reward = forward_reward + moving_reward + ctrl_reward + rotate_reward + velocity_reward
+        print("rotate_reward: ", self.rotate_reward)
+        print("velocity_reward: ", self.velocity_reward)
+        reward = self.forward_reward + self.moving_reward + self.ctrl_reward + self.rotate_reward + self.velocity_reward
 
         self.episode_cnt += 1
         self.step_cnt += 1
@@ -205,11 +265,11 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             terminated,
             truncated,
             dict(
-                reward_forward=forward_reward,
-                reward_moving=moving_reward,
-                reward_ctrl=ctrl_reward,
-                reward_rotate=rotate_reward,
-                reward_velocity=velocity_reward,
+                reward_forward=self.forward_reward,
+                reward_moving=self.moving_reward,
+                reward_ctrl=self.ctrl_reward,
+                reward_rotate=self.rotate_reward,
+                reward_velocity=self.velocity_reward,
                 )
         )
     
@@ -222,7 +282,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
     def _get_obs(self):
         return np.concatenate(
             [
-                np.concatenate(self.prev_body_xquat),
+                #np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
                 self.local_command,
             ]
