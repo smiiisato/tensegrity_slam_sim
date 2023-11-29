@@ -25,7 +25,8 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         self.ctrl_min = [-self.act_range]*self.action_length
 
         # initial command, direction +x
-        self.command = 0
+        self.command = [0.5, 0.0, 0.0]
+        self.local_command = None
 
         # flag for randomizing initial position
         self.randomize_position = (self.resume or self.test)
@@ -41,6 +42,8 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
 
         self.episode_cnt = 0
         self.step_cnt = 0
+
+        self.link1_xmat = None
 
         if self.test or self.resume:
             self.default_step_rate = 0.5
@@ -116,6 +119,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         moving_reward = 0
         ctrl_reward = 0
         rotate_reward = 0
+        velocity_reward = 0
         # reward
 
         ## calculate angular momentum
@@ -128,13 +132,17 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
             body_com_xpos = body_xpos[i]
             body_vel = self.body_qvel[i][0:3]
             angular_momentum += body_mass*np.cross(body_com_xpos-self.com_xpos, body_vel-self.com_qvel)
-        
-        ## desired angular momentum
-        if self.command is not None:
-            desired_angular_momentum = np.array([0.0, 0.02, 0.0])
 
         ## calculate rotate reward
-        rotate_reward = -10.0*np.linalg.norm(np.array([1.0, 10.0, 1.0])*(angular_momentum-desired_angular_momentum))
+        rotate_reward = 10.0*angular_momentum[2]
+
+        ## calculate velocity reward
+        desired_velocity = self.command[0:2]
+        if np.dot(desired_velocity, self.com_qvel[0:2]) > np.square(desired_velocity).sum(): # if des_vel * com_vel > abs(des_vel)^2
+            velocity_reward = 1.0
+        else:
+            velocity_reward = np.exp(-20.0*np.square(desired_velocity-self.com_qvel[0:2]).sum()) # exp(-20*||des_vel - com_vel||^2)
+
         
         ## calculate forward reward
         #if self.command is not None:
@@ -150,7 +158,8 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         #moving_reward = 10.0*np.linalg.norm(self.current_body_xpos - self.prev_body_xpos[-1])
         #ctrl_reward = -0.1*self.step_rate*np.linalg.norm(action-self.prev_action[-1])
         print("rotate_reward: ", rotate_reward)
-        reward = forward_reward + moving_reward + ctrl_reward + rotate_reward
+        print("velocity_reward: ", velocity_reward)
+        reward = forward_reward + moving_reward + ctrl_reward + rotate_reward + velocity_reward
 
         self.episode_cnt += 1
         self.step_cnt += 1
@@ -169,6 +178,13 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         self.prev_action.append(copy.deepcopy(action)) ## (24,)
         if len(self.prev_action) > self.n_prev:
             self.prev_action.pop(0)
+
+        ## convert world command to local command
+        if self.command is not None:
+            self.local_command = self.world_to_local(self.command)
+        else:
+            raise ValueError("command is not set")
+
 
         ## observation
         assert self.command is not None
@@ -193,7 +209,23 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
                 reward_moving=moving_reward,
                 reward_ctrl=ctrl_reward,
                 reward_rotate=rotate_reward,
+                reward_velocity=velocity_reward,
                 )
+        )
+    
+    def world_to_local(self, world_command):
+        ## convert world command to local command
+        self.link1_xmat = self.data.xmat[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "link1")].reshape(3, 3)
+        self.local_command = np.dot(self.link1_xmat.T, np.array(world_command).T)
+        return self.local_command
+    
+    def _get_obs(self):
+        return np.concatenate(
+            [
+                np.concatenate(self.prev_body_xquat),
+                np.concatenate(self.prev_action),
+                self.local_command,
+            ]
         )
     
     def reset_model(self):
@@ -213,7 +245,7 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         qpos += 0.02*self.step_rate*np.random.randn(len(qpos))
         ## add initial velocity
         qvel = self.init_qvel
-        if self.randomize_position or self.test:
+        if self.randomize_position and self.test:
             qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
                 0, 0, 0.5, 0, 0, 0, 0,
@@ -248,11 +280,12 @@ class TensegrityEnvRealmodelFullactuatorAngularmomentum(TensegrityEnv):
         
         ## switch to new command
         if self.test:
-            self.command = [0.5, 0.0]
+            self.command = [0.5, 0.0, 0.0]
             #self.command = np.random.uniform(-180, 180)
         else:
-            self.command = [0.5, 0.0]
+            self.command = [0.5, 0.0, 0.0]
         
         self.prev_command = [self.command for i in range(self.n_prev)] ## (1,)
+        self.local_command = self.world_to_local(self.command)
 
         return self._get_obs()
