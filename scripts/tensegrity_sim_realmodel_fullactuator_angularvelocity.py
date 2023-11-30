@@ -109,7 +109,7 @@ class TensegrityEnvRealmodelFullactuatorAngularvelocity(TensegrityEnv):
             self.debug_msg = Float32MultiArray()
             self.debug_pub = rospy.Publisher('tensegrity_env/debug', Float32MultiArray, queue_size=10)
 
-        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(27,)) ## (24 + 24 + 3) * n_prev
+        observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(51,)) ## (24 + 24 + 3) * n_prev
 
         self.rospack = RosPack()
         
@@ -180,8 +180,10 @@ class TensegrityEnvRealmodelFullactuatorAngularvelocity(TensegrityEnv):
         self.velocity_reward = 0
         
         ## calculate rotate reward
-        if self.average_qvel[3] > 2.0: # pitch > 3.0
+        if self.com_qvel[3] > 2.0: # pitch > 2.0
             self.rotate_reward = 1.0
+        elif self.com_qvel[3] < 0.0: # pitch < 0.0 
+            self.rotate_reward = -0.1*np.square(2.0-self.com_qvel[3]) # -||des_pitch - real_pitch||^2
         else:
             self.rotate_reward = np.exp(-1.0*np.square(2.0-self.com_qvel[3])) # exp(-20*||des_pitch - real_pitch||^2)
 
@@ -200,8 +202,6 @@ class TensegrityEnvRealmodelFullactuatorAngularvelocity(TensegrityEnv):
         #    raise ValueError("command is not set")
         
         if self.test:
-            print("rotate_reward: ", self.rotate_reward)
-            print("velocity_reward: ", self.velocity_reward)
             ## draw reward for debugging
             self.fig1.canvas.draw()
             self.fig1.canvas.flush_events()
@@ -276,7 +276,7 @@ class TensegrityEnvRealmodelFullactuatorAngularvelocity(TensegrityEnv):
     def _get_obs(self):
         return np.concatenate(
             [
-                #np.concatenate(self.prev_body_xquat),
+                np.concatenate(self.prev_body_xquat),
                 np.concatenate(self.prev_action),
                 self.local_command,
             ]
