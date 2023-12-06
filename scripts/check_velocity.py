@@ -96,7 +96,7 @@ ln5, = plt.plot([], [], 'r-', animated=True)
 
 def init5():
     ax5.set_xlim(0, 100)
-    ax5.set_ylim(-20, 20)
+    ax5.set_ylim(-1, 1)
     ax5.set_xlabel("time [s]")
     ax5.set_ylabel("angular momentum 2[x] [kg m^2/s]")
     return ln5,
@@ -116,7 +116,7 @@ ln6, = plt.plot([], [], 'r-', animated=True)
 
 def init6():
     ax6.set_xlim(0, 100)
-    ax6.set_ylim(-20, 20)
+    ax6.set_ylim(-1, 1)
     ax6.set_xlabel("time [s]")
     ax6.set_ylabel("angular momentum 2[y] [kg m^2/s]")
     return ln6,
@@ -136,7 +136,7 @@ ln7, = plt.plot([], [], 'r-', animated=True)
 
 def init7():
     ax7.set_xlim(0, 100)
-    ax7.set_ylim(-20, 20)
+    ax7.set_ylim(-1, 1)
     ax7.set_xlabel("time [s]")
     ax7.set_ylabel("angular momentum 2[z] [kg m^2/s]")
     return ln7,
@@ -175,21 +175,21 @@ ani8 = FuncAnimation(fig8, update8, frames=np.linspace(0, 100, 1000),
 # MJCFファイルのパス
 rospack = RosPack()
 #model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model.xml'  
-model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator.xml'  
+model_path = rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_new_coordinate.xml'  
 
 # モデルとシミュレーションのロード
 model = mujoco.MjModel.from_xml_path(model_path)
 data = mujoco.MjData(model)
-"""
-data.qpos += np.array([0, 0, 0.025, 0, 0, 0, 0,
-                0, 0, 0.025, 0, 0, 0, 0,
-                0, 0, 0.025, 0, 0, 0, 0,
-                0, 0, 0.025, 0, 0, 0, 0,
-                0, 0, 0.025, 0, 0, 0, 0,
-                0, 0, 0.025, 0, 0, 0, 0
+
+data.qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0,
+                0, 0, 0.5, 0, 0, 0, 0
                 ])
-"""
-model.opt.gravity = [2.4, 0, -5.0]
+
+model.opt.gravity = [2.0, 0, -5.0]
 # Viewerの初期化
 viewer = mujoco.viewer.launch_passive(model, data)
 
@@ -252,11 +252,11 @@ while viewer.is_running():
     current_body_xpos = np.mean(body_xpos, axis=0) ## (3,)
 
     angular_momentum_2 = calculate_angular_momentum(body_xpos=body_xpos, body_qvel=qvel, average_velocity=average_velocity)
-    #print("angular_momentum: ", angular_momentum_2)
+    print("angular_momentum: ", angular_momentum_2)
     #print("body_com_xpos", body_com_xpos)
     #print("inertial matrix", model.body_inertia[1])
     #print("relative_velocity", relative_velocity[0])
-        
+    
     """
     fig2.canvas.draw()
     fig2.canvas.flush_events()

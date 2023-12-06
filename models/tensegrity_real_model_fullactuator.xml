@@ -1,13 +1,13 @@
 <mujoco model="tensegrity">
   <!--<option timestep="0.002" collision="predefined" gravity="0 0 0"/>-->
-  <option timestep="0.002" collision="predefined"/>
+  <option timestep="0.005" collision="predefined"/>
   <default>
     <site size="0.005" rgba="1 1 1 1"/>
     <default class="tendon_actuator">
       <general ctrllimited="true" ctrlrange="-18.0 0" dyntype="filter" dynprm="0.0179"/> <!-- for real2sim -->
     </default>
     <default class="tendon_spatial">
-      <tendon damping="5" stiffness="1000" frictionloss="0.5"/>
+      <tendon damping="5" stiffness="200" frictionloss="0.5"/>
     </default>
     <default class="tendon_spatial_static">
       <tendon damping="5" stiffness="200" frictionloss="0.5"/>
