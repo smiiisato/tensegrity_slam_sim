@@ -19,12 +19,12 @@
     </worldbody>
 
     <contact>
-      <pair geom1="floor" geom2="link1" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link2" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link3" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link4" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link5" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link6" friction="1.5 1.5"/>
+      <pair geom1="floor" geom2="link1" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link2" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link3" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link4" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link5" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link6" friction="5.0 5.0"/>
       <pair geom1="link1" geom2="link2"/>
       <pair geom1="link1" geom2="link3"/>
       <pair geom1="link1" geom2="link4"/>

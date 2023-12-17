@@ -37,24 +37,24 @@
       <pair geom1="floor" geom2="sphere_5b" friction="1.0 1.0"/>
       <pair geom1="floor" geom2="sphere_6t" friction="1.0 1.0"/>
       <pair geom1="floor" geom2="sphere_6b" friction="1.0 1.0"/>
-    <!-- <pair geom1="floor" geom2="link1" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link2" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link3" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link4" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link5" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="link6" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_1t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_1b" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_2t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_2b" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_3t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_3b" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_4t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_4b" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_5t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_5b" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_6t" friction="1.5 1.5"/>
-      <pair geom1="floor" geom2="sphere_6b" friction="1.5 1.5"/>-->
+    <!-- <pair geom1="floor" geom2="link1" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link2" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link3" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link4" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link5" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="link6" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_1t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_1b" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_2t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_2b" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_3t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_3b" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_4t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_4b" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_5t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_5b" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_6t" friction="5.0 5.0"/>
+      <pair geom1="floor" geom2="sphere_6b" friction="5.0 5.0"/>-->
       <pair geom1="link1" geom2="link2"/>
       <pair geom1="link1" geom2="link3"/>
       <pair geom1="link1" geom2="link4"/>

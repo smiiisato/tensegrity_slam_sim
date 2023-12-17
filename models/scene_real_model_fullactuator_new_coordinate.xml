@@ -1,5 +1,5 @@
 <mujoco model="scene">
-  <include file="tensegrity_real_model_fullactuator.xml"/>
+  <include file="tensegrity_real_model_fullactuator_new_coordinate.xml"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.5 0.5 0.3" specular="0 0 0"/>
@@ -15,7 +15,7 @@
 
     <worldbody>
       <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
-      <geom name="floor" pos="0 0 -0.2" size="0 0 0.05" type="plane" material="groundplane"/>
+      <geom name="floor" pos="0 0 -0.015" size="0 0 0.05" type="plane" material="groundplane"/>
     </worldbody>
 
     <contact>
