@@ -27,12 +27,13 @@ def rescale_actions(low, high, action):
 USE_ANG_VEL_OBS = True
 ADD_ASSISTIVE_FORCE = False
 ADD_TENDON_LENGTH_OBSERVATION = True
-ADD_ACTUATOR_VEL_OBSERVATION = True
+ADD_TENDON_VEL_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
+INITIAL_TENSION = -5.0
 
 
-class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle):
+class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": [
             "human",
@@ -72,7 +73,8 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
         self.add_assistive_force = ADD_ASSISTIVE_FORCE
         self.add_tendon_len_obs = ADD_TENDON_LENGTH_OBSERVATION
         self.plot_reward = PLOT_REWARD
-        self.add_actuator_vel_obs = ADD_ACTUATOR_VEL_OBSERVATION
+        self.add_tendon_vel_obs = ADD_TENDON_VEL_OBSERVATION
+        self.initial_tension = INITIAL_TENSION
         
         # control range
         self.num_actions = 24
@@ -83,15 +85,14 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
 
         # observation space
         self.use_ang_vel_obs = USE_ANG_VEL_OBS
-        num_obs_per_step = 117  # 24 + 24 + 3 = 51  or 24 + 18 + 24 + 3 = 69
-        """
+        num_obs_per_step = 51  # 24 + 24 + 3 = 51  or 24 + 18 + 24 + 3 = 69
         if self.use_ang_vel_obs:
             num_obs_per_step += 18
         if self.add_tendon_len_obs:
             num_obs_per_step += 24
-        if self.add_actuator_vel_obs:
+        if self.add_tendon_vel_obs:
             num_obs_per_step += 24
-        """
+    
         self.n_obs_step = 1
         observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(num_obs_per_step*self.n_obs_step,))
         self.obs_deque = deque(maxlen=self.n_obs_step)
@@ -118,7 +119,7 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
                 self.draw_reward()
 
         self.rospack = RosPack()
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_new_coordinate.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
         MujocoEnv.__init__(
             self,
@@ -193,12 +194,13 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
             body_ang_vel_local[i] = np.dot(rot_matrix[i].transpose(), body_ang_vel_world[i])
 
         return np.concatenate((body_quat.flatten(), body_ang_vel_local.flatten(), tendon_length, actions.flatten(), commands))
-
+    
     def _get_current_obs3(self, qpos, qvel, actions, commands, tendon_length, tendon_velocity):
-            """
-            calculate one step observations
-            """
-            return np.concatenate((self._get_current_obs2(qpos, qvel, actions, commands, tendon_length), tendon_velocity))
+        """
+        calculate one step observations
+        """
+        print("size of obs", len(np.concatenate(self._get_current_obs2(qpos, qvel, actions, commands, tendon_length), tendon_velocity)))
+        return np.concatenate(self._get_current_obs2(qpos, qvel, actions, commands, tendon_length), tendon_velocity)
 
 
     def _get_stack_obs(self):
@@ -306,7 +308,7 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
         self.step_cnt += 1
 
         # calculate the observations and update the observation deque
-        if self.add_actuator_vel_obs:
+        if self.add_tendon_vel_obs:
             tendon_velocity = self.data.ten_velocity
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs3(self.data.qpos, self.data.qvel, action, self.vel_command, tendon_length, tendon_velocity)
@@ -453,6 +455,9 @@ class TensegrityEnvRealModelFullActuatorLinearVelocity(MujocoEnv, utils.EzPickle
         self.prev_com_pos = np.mean(copy.deepcopy(self.data.qpos.reshape(-1, 7)[:, 0:3]), axis=0)  # (3,)
         for k in range(self.check_steps):
             self.com_pos_deque.appendleft(self.prev_com_pos)
+        
+        # add initial tension
+        self.data.ctrl[:] = self.initial_tension
 
         # return the stacked obs as the initial obs of episode
         return self._get_stack_obs()

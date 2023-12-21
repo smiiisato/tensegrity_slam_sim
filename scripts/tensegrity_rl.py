@@ -18,6 +18,7 @@ from tensegrity_sim import TensegrityEnv
 from tensegrity_sim_realmodel_fullactuator_velocity import TensegrityEnvRealModelFullActuatorVelocity
 from tensegrity_sim_realmodel_fullactuator_angularmoment import TensegrityEnvRealModelFullActuatorAngularMomentum
 from tensegrity_sim_realmodel_fullactuator_linear_velocity import TensegrityEnvRealModelFullActuatorLinearVelocity
+from tensegrity_sim_realmodel_fullactuator_no_stiffness import TensegrityEnvRealModelFullActuatorNoStiffness
 
 
 def parser():
@@ -60,7 +61,8 @@ def make_env(test, max_step, act_range=6.0, resume=False, render_mode=None):
         env_class_options = [TensegrityEnv, 
                              TensegrityEnvRealModelFullActuatorVelocity, 
                              TensegrityEnvRealModelFullActuatorAngularMomentum,
-                             TensegrityEnvRealModelFullActuatorLinearVelocity]  # TODO: add new env class here
+                             TensegrityEnvRealModelFullActuatorLinearVelocity,
+                             TensegrityEnvRealModelFullActuatorNoStiffness]  # TODO: add new env class here
         env_cls = env_class_options[args.sim_env-1]
         info_key = env_cls.info_keywords
         # print(info_key)
