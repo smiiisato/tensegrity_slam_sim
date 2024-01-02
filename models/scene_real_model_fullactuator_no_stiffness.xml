@@ -19,6 +19,21 @@
     </worldbody>
 
     <contact>
+      <pair geom1="actuator1" geom2="actuator2" friction="5.0 5.0"/>
+      <pair geom1="actuator1" geom2="actuator3" friction="5.0 5.0"/>
+      <pair geom1="actuator1" geom2="actuator4" friction="5.0 5.0"/>
+      <pair geom1="actuator1" geom2="actuator5" friction="5.0 5.0"/>
+      <pair geom1="actuator1" geom2="actuator6" friction="5.0 5.0"/>
+      <pair geom1="actuator2" geom2="actuator3" friction="5.0 5.0"/>
+      <pair geom1="actuator2" geom2="actuator4" friction="5.0 5.0"/>
+      <pair geom1="actuator2" geom2="actuator5" friction="5.0 5.0"/>
+      <pair geom1="actuator2" geom2="actuator6" friction="5.0 5.0"/>
+      <pair geom1="actuator3" geom2="actuator4" friction="5.0 5.0"/>
+      <pair geom1="actuator3" geom2="actuator5" friction="5.0 5.0"/>
+      <pair geom1="actuator3" geom2="actuator6" friction="5.0 5.0"/>
+      <pair geom1="actuator4" geom2="actuator5" friction="5.0 5.0"/>
+      <pair geom1="actuator4" geom2="actuator6" friction="5.0 5.0"/>
+      <pair geom1="actuator5" geom2="actuator6" friction="5.0 5.0"/>
       <pair geom1="floor" geom2="link1" friction="5.0 5.0"/>
       <pair geom1="floor" geom2="link2" friction="5.0 5.0"/>
       <pair geom1="floor" geom2="link3" friction="5.0 5.0"/>

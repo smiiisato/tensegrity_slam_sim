@@ -21,19 +21,19 @@ for i in range(model.nu):
 # Viewerの初期化
 viewer = mujoco_viewer.MujocoViewer(model, data)
 
-model.opt.gravity = [0.0, 0, -0.5]
+model.opt.gravity = [0.0, 0, -9.8]
 count = 0
 
 while True:
-    if count > 1000:
-        model.opt.gravity = [0.0, 0, -9.8]
     mujoco.mj_step(model, data)
     viewer.render()
     #time.sleep(0.01)
     #print(data.actuator_force)
     #print("tendon_length: ", data.ten_length)
-    print("ctrl: ", data.ctrl)
+    print("imu: ", data.sensordata)
+    #print("ctrl: ", data.ctrl)
     count += 1
+    time.sleep(1)
 
 """
 ## PID control

@@ -31,12 +31,12 @@ def parser():
     # observation and action space
     parser.add_argument("--normalize_obs", action="store_true", default=True, help="whether normalize the obs value or not")
     parser.add_argument("--obs_range", type=float, default=100.0, help="actuator control range")  # max obs value before sending to moving average
-    parser.add_argument("--act_range", type=float, default=17.0, help="actuator control range")  # action space(force value) TODO:normalize action
+    parser.add_argument("--act_range", type=float, default=16.0, help="actuator control range")  # action space(force value) TODO:normalize action
 
     # learning-related params
     parser.add_argument("--n_env", type=int, default=1, help="number of sub_env/parallel_env to use")
-    parser.add_argument("--batch_size", type=int, default=24576*2, help="number of batch size(experience buffer size)")  # experience buffer size
-    parser.add_argument("--minibatch", type=int, default=2048*2, help="number of mini_batch to update policy")  # minibatch size
+    parser.add_argument("--batch_size", type=int, default=24576, help="number of batch size(experience buffer size)")  # experience buffer size
+    parser.add_argument("--minibatch", type=int, default=2048, help="number of mini_batch to update policy")  # minibatch size
     parser.add_argument("--epoch", type=int, default=5, help="number of epoch to update")  # data epoch numbers for one policy iteration
     parser.add_argument("--max_step", type=int, default=400000000, help="PPO train total time steps")  # sum of all parallel envs' steps
     parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
