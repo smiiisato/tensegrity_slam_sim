@@ -1,3 +1,7 @@
+"""
+this script uses the imu data from the real robot instead of quaternion value to train the tensegrity robot in simulation
+"""
+
 import copy
 import time
 from typing import Any, Optional, SupportsFloat
@@ -24,17 +28,14 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-USE_ANG_VEL_OBS = False
-USE_ONLY_TENDON_LENGTH_OBS = True
-ADD_ASSISTIVE_FORCE = False
-ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_TENDON_VEL_OBSERVATION = False
+ADD_TENDON_LENGTH_OBSERVATION = True
+ADD_ENC_VALUE_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
 
 
-class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
+class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": [
             "human",
@@ -71,10 +72,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
         self.max_episode = 2048  # maximum steps of every episode
 
-        self.add_assistive_force = ADD_ASSISTIVE_FORCE
         self.add_tendon_len_obs = ADD_TENDON_LENGTH_OBSERVATION
+        self.add_enc_value_obs = ADD_ENC_VALUE_OBSERVATION
         self.plot_reward = PLOT_REWARD
-        self.add_tendon_vel_obs = ADD_TENDON_VEL_OBSERVATION
         self.initial_tension = INITIAL_TENSION
         
         # control range
@@ -85,16 +85,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         self.action_space_high = [1.0] * self.num_actions
 
         # observation space
-        self.use_ang_vel_obs = USE_ANG_VEL_OBS
-        self.use_only_tendon_len_obs = USE_ONLY_TENDON_LENGTH_OBS
-        num_obs_per_step = 51  # 24 + 24 + 3 = 51  or 24 + 18 + 24 + 3 = 69
-        if self.use_only_tendon_len_obs:
-            num_obs_per_step += 24
-        if self.use_ang_vel_obs:
-            num_obs_per_step += 18
+        num_obs_per_step = 63  # 36 + 24 + 24 + 3 = 87
         if self.add_tendon_len_obs:
             num_obs_per_step += 24
-        if self.add_tendon_vel_obs:
+        if self.add_enc_value_obs:
             num_obs_per_step += 24
     
         self.n_obs_step = 1
@@ -163,129 +157,21 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         self.action_space = spaces.Box(low, high, dtype=np.float32)
         return self.action_space
 
-    def _get_current_obs(self, qpos, qvel, actions, commands):
+    def _get_current_obs(self, imu_data, ten_length, actions, commands):
         """
-        calculate one step observations
+        obs = imu + ten_len + actions + commands
         """
-        body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
-        body_ang_vel_world = qvel.reshape((-1, 6))[:, 3:]
+        return np.concatenate((imu_data, ten_length, actions.flatten(), commands))
 
-        body_quat_w_last = np.zeros_like(body_quat)
-        body_quat_w_last[:, -1] = body_quat[:, 0]
-        body_quat_w_last[:, 0:3] = body_quat[:, 1:]
-        rot_matrix = R.from_quat(body_quat_w_last).as_matrix()  # stack of rotation matrix
-
-        body_ang_vel_local = np.zeros_like(body_ang_vel_world)
-        for i in range(body_ang_vel_local.shape[0]):
-            body_ang_vel_local[i] = np.dot(rot_matrix[i].transpose(), body_ang_vel_world[i])
-
-        return np.concatenate((body_quat.flatten(), body_ang_vel_local.flatten(), actions.flatten(), commands))
-
-    def _get_current_obs2(self, qpos, qvel, actions, commands, tendon_length):
+    def _get_current_obs2(self, imu_data, ten_length, actions, commands):
         """
-        calculate one step observations
+        obs = imu + imu_vel + ten_len + actions + commands
         """
-        body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
-        body_ang_vel_world = qvel.reshape((-1, 6))[:, 3:]
-
-        body_quat_w_last = np.zeros_like(body_quat)
-        body_quat_w_last[:, -1] = body_quat[:, 0]
-        body_quat_w_last[:, 0:3] = body_quat[:, 1:]
-        rot_matrix = R.from_quat(body_quat_w_last).as_matrix()  # stack of rotation matrix
-
-        body_ang_vel_local = np.zeros_like(body_ang_vel_world)
-        for i in range(body_ang_vel_local.shape[0]):
-            body_ang_vel_local[i] = np.dot(rot_matrix[i].transpose(), body_ang_vel_world[i])
-
-        return np.concatenate((body_quat.flatten(), body_ang_vel_local.flatten(), tendon_length, actions.flatten(), commands))
-    
-    def _get_current_obs3(self, qpos, qvel, actions, commands, tendon_length, tendon_velocity):
-        """
-        quaternion + tendon_length + actions + commands + tendon_velocity
-        """
-        return np.concatenate([self._get_current_obs2(qpos, qvel, actions, commands, tendon_length), tendon_velocity])
-
-    def _get_current_obs_4(self, qpos, actions, commands):
-        """
-        quaternion + actions + commands
-        """
-        body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
-        
-        body_quat_w_last = np.zeros_like(body_quat)
-        body_quat_w_last[:, -1] = body_quat[:, 0]
-        body_quat_w_last[:, 0:3] = body_quat[:, 1:]
-
-        return np.concatenate((body_quat.flatten(), actions.flatten(), commands))
-
-    def _get_current_obs_5(self, qpos, actions, commands, tendon_length):
-            """
-            quaternion + tendon_length + actions + commands
-            """
-            body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
-            
-            body_quat_w_last = np.zeros_like(body_quat)
-            body_quat_w_last[:, -1] = body_quat[:, 0]
-            body_quat_w_last[:, 0:3] = body_quat[:, 1:]
-
-            return np.concatenate((body_quat.flatten(), tendon_length, actions.flatten(), commands))
+        return np.concatenate((imu_data, ten_length, actions.flatten(), commands))
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
     
-    def draw_reward(self):
-        import matplotlib.pyplot as plt
-        from matplotlib.animation import FuncAnimation
-        
-        self.fig1, self.ax1 = plt.subplots()
-        self.xdata1, self.ydata1 = [], []
-        self.ln1, = plt.plot([], [], 'r-', animated=True)
-        def init1():
-            self.ax1.set_xlim(0, 10000)
-            self.ax1.set_ylim(-2, 2)
-            self.ax1.set_ylabel("forward_x_reward")
-            return self.ln1,
-        def update1(frame):
-            self.xdata1.append(frame)
-            self.ydata1.append(self.forward_x_reward)
-            self.ln1.set_data(self.xdata1, self.ydata1)
-            return self.ln1,
-        ani1 = FuncAnimation(self.fig1, update1, frames=np.linspace(0, 10000, 10000),  
-                            init_func=init1, blit=True)
-        
-        self.fig2, self.ax2 = plt.subplots()
-        self.xdata2, self.ydata2 = [], []
-        self.ln2, = plt.plot([], [], 'r-', animated=True)
-        def init2():
-            self.ax2.set_xlim(0, 10000)
-            self.ax2.set_ylim(-2, 2)
-            self.ax2.set_ylabel("ang_momentum_reward")
-            return self.ln2,
-        def update2(frame):
-            self.data2.append(frame)
-            self.ydata2.append(self.ang_momentum_reward)
-            self.ln2.set_data(self.xdata2, self.ydata2)
-            return self.ln2,
-        ani2 = FuncAnimation(self.fig2, update2, frames=np.linspace(0, 10000, 10000), interval=1,
-                            init_func=init2, blit=True)
-        
-        self.fig3, self.ax3 = plt.subplots()
-        self.xdata3, self.ydata3 = [], []
-        self.ln3, = plt.plot([], [], 'r-', animated=True)
-        def init3():
-            self.ax3.set_xlim(0, 10000)
-            self.ax3.set_ylim(-2, 2)
-            self.ax3.set_ylabel("total_reward")
-            return self.ln3,
-        def update3(frame):
-            self.data3.append(frame)
-            self.ydata3.append(self.current_step_total_reward)
-            self.ln3.set_data(self.xdata3, self.ydata3)
-            return self.ln3,
-        ani2 = FuncAnimation(self.fig3, update3, frames=np.linspace(0, 10000, 10000), interval=1,
-                            init_func=init3, blit=True)
-        
-        plt.show(block=False)
-        
     def step(self, action):
         """
         what we need do inside the step():
@@ -313,16 +199,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
         # add external assistive force curriculum
         self.data.xfrc_applied[:] = 0.0
-        if self.add_assistive_force and self.episode_cnt > 300:
-            if np.linalg.norm(self.com_pos_deque[0] - self.com_pos_deque[50]) < 0.03:
-                print("add assistive force", self.episode_cnt)
-                body_name_list = ["link1", "link2", "link3", "link4", "link5", "link6"]
-                body_ids = [mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name_list[i]) for i in range(len(body_name_list))]
-                # TODO: check the validation
-                x_frc = np.zeros((6, 6))
-                x_frc[:, 0] = max((1.0-0), 0.) * 100.0
-                self.data.xfrc_applied[body_ids] = x_frc
-
+        
         # add action(tension force) noise from [0.95, 1.05]--> percentage
         tension_force *= np.random.uniform(0.98, 1.02, self.num_actions)
         average_tension_force = np.mean(tension_force)
@@ -334,20 +211,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         self.step_cnt += 1
 
         # calculate the observations and update the observation deque
-        if self.use_only_tendon_len_obs:
+        if self.add_tendon_len_obs:
+            imu_data = self.data.sensordata
             tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs_5(self.data.qpos, action, self.vel_command, tendon_length)
-        elif self.add_tendon_vel_obs:
-            tendon_velocity = self.data.ten_velocity
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs3(self.data.qpos, self.data.qvel, action, self.vel_command, tendon_length, tendon_velocity)
-        elif self.add_tendon_len_obs:
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs2(self.data.qpos, self.data.qvel, action, self.vel_command, tendon_length)
-        elif self.use_ang_vel_obs:
-            cur_step_obs = self._get_current_obs(self.data.qpos, self.data.qvel, action, self.vel_command)
+            cur_step_obs = self._get_current_obs(imu_data, tendon_length, action, self.vel_command)
         else:
-            cur_step_obs = self._get_current_obs_4(self.data.qpos, action, self.vel_command)
+            cur_step_obs = self._get_current_obs_2(imu_data, tendon_length, action, self.vel_command)
         self.obs_deque.appendleft(cur_step_obs)
         obs = self._get_stack_obs()
 
@@ -486,20 +355,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         # calculate the current step observations and fill out the observation buffer
         zero_actions = np.array([0.]*self.num_actions)
         
-        if self.use_only_tendon_len_obs:
+        if self.add_tendon_len_obs:
+            imu_data = self.data.sensordata
             tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs_5(self.data.qpos, zero_actions, self.vel_command, tendon_length)
-        elif self.add_tendon_vel_obs:
-            tendon_velocity = self.data.ten_velocity
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs3(self.data.qpos, self.data.qvel, zero_actions, self.vel_command, tendon_length, tendon_velocity)
-        elif self.add_tendon_len_obs:
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs2(self.data.qpos, self.data.qvel, zero_actions, self.vel_command, tendon_length)
-        elif self.use_ang_vel_obs:
-            cur_step_obs = self._get_current_obs(self.data.qpos, self.data.qvel, zero_actions, self.vel_command)
+            cur_step_obs = self._get_current_obs(imu_data, tendon_length, zero_actions, self.vel_command)
         else:
-            cur_step_obs = self._get_current_obs_4(self.data.qpos, zero_actions, self.vel_command)
+            cur_step_obs = self._get_current_obs_2(imu_data, tendon_length, zero_actions, self.vel_command)
         for i in range(self.n_obs_step):
             self.obs_deque.appendleft(cur_step_obs)
         # update the com state
