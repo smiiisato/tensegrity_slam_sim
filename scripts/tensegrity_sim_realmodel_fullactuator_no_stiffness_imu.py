@@ -30,8 +30,8 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-ADD_TENDON_LENGTH_OBSERVATION = True
-ADD_ENC_VALUE_OBSERVATION = False
+ADD_TENDON_LENGTH_OBSERVATION = False
+ADD_ENC_VALUE_OBSERVATION = True
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
@@ -64,7 +64,11 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         """
 
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0]*36))
+        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
+        # initial encoder value
+        self.enc_value = np.array([0.0]*24)
+        # initial tendon length
+        self.prev_ten_length = None
 
         self.test = test
         self.is_params_set = False
@@ -170,9 +174,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
 
     def _get_current_obs2(self, imu_data, ten_length, actions, commands):
         """
-        obs = imu + imu_vel + ten_len + actions + commands
+        obs = imu + enc_value + actions + commands
         """
-        return np.concatenate((imu_data, ten_length, actions.flatten(), commands))
+        diff_ten_length = np.array(ten_length) - self.prev_ten_length
+        diff_enc_value = diff_ten_length / (0.01 * np.pi) * 6.0 # spool一周 = 0.01*pi # 6.0 = encoder一周 
+        self.enc_value += diff_enc_value
+        return np.concatenate((imu_data, self.enc_value, actions.flatten(), commands))
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
@@ -196,6 +203,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         if self.prev_action is None:
             self.prev_action = action
 
+        if self.prev_ten_length is None:
+            self.prev_ten_length = np.array(self.data.ten_length)
+        
         # rescale action to tension force first
         tension_force = rescale_actions(self.ctrl_min, self.ctrl_max, action)
 
@@ -220,8 +230,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             imu_data = self.ema_filter.update(self.data.sensordata)
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, action, self.vel_command)
-        else:
-            cur_step_obs = self._get_current_obs_2(imu_data, tendon_length, action, self.vel_command)
+        elif self.add_enc_value_obs:
+            imu_data = self.ema_filter.update(self.data.sensordata)
+            tendon_length = self.data.ten_length
+            cur_step_obs = self._get_current_obs2(imu_data, tendon_length, action, self.vel_command)
         self.obs_deque.appendleft(cur_step_obs)
         obs = self._get_stack_obs()
 
@@ -252,6 +264,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         
         ## update prev_action
         self.prev_action = action
+        # update prev_ten_length
+        self.prev_ten_length = np.array(self.data.ten_length)
 
         rew_dict = {}
         if self.test:
@@ -357,15 +371,22 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             v = 0.8
             self.vel_command = [v, 0.0, 0.0]
 
+        # ema filter
+        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
+        # initial encoder value
+        self.enc_value = np.array([0.0]*24)
+        # initial tendon length
+        self.prev_ten_length = self.data.ten_length
+
         # calculate the current step observations and fill out the observation buffer
         zero_actions = np.array([0.]*self.num_actions)
-        
+
+        imu_data = self.ema_filter.update(self.data.sensordata)
+        tendon_length = self.data.ten_length
         if self.add_tendon_len_obs:
-            imu_data = self.ema_filter.update(self.data.sensordata)
-            tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, zero_actions, self.vel_command)
-        else:
-            cur_step_obs = self._get_current_obs_2(imu_data, tendon_length, zero_actions, self.vel_command)
+        elif self.add_enc_value_obs:
+            cur_step_obs = self._get_current_obs2(imu_data, tendon_length, zero_actions, self.vel_command)
         for i in range(self.n_obs_step):
             self.obs_deque.appendleft(cur_step_obs)
         # update the com state

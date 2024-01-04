@@ -24,11 +24,11 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-USE_ANG_VEL_OBS = False
-USE_ONLY_TENDON_LENGTH_OBS = True
+USE_ANG_VEL_OBS = True
+USE_ONLY_TENDON_LENGTH_OBS = False
 ADD_ASSISTIVE_FORCE = False
-ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_TENDON_VEL_OBSERVATION = False
+ADD_TENDON_LENGTH_OBSERVATION = True
+ADD_TENDON_VEL_OBSERVATION = True
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
@@ -124,6 +124,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
         self.rospack = RosPack()
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
         MujocoEnv.__init__(
             self,
