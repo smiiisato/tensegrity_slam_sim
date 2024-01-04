@@ -16,6 +16,8 @@ from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 from rospkg import RosPack
 
+from EMAfilter import EMAFilter
+
 
 def rescale_actions(low, high, action):
     """
@@ -60,6 +62,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         """
         resume training is abandoned due to mujoco supports evaluation along with training
         """
+
+        # ema filter
+        self.ema_filter = EMAFilter(0.2, np.array([0]*36))
 
         self.test = test
         self.is_params_set = False
@@ -212,7 +217,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
 
         # calculate the observations and update the observation deque
         if self.add_tendon_len_obs:
-            imu_data = self.data.sensordata
+            imu_data = self.ema_filter.update(self.data.sensordata)
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, action, self.vel_command)
         else:
@@ -356,7 +361,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         zero_actions = np.array([0.]*self.num_actions)
         
         if self.add_tendon_len_obs:
-            imu_data = self.data.sensordata
+            imu_data = self.ema_filter.update(self.data.sensordata)
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, zero_actions, self.vel_command)
         else:
