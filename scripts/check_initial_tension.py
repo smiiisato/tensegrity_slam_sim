@@ -22,18 +22,30 @@ for i in range(model.nu):
 viewer = mujoco_viewer.MujocoViewer(model, data)
 
 model.opt.gravity = [0.0, 0, -9.8]
+data.ten_length[:] = 0.30
+data.qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
+                        -0.20092532,  0.350647,    0.11930152,  0.06542414,  0.79409071, -0.2563381,
+                        0.54759233,  0.06207542,  0.22993135,  0.20179415,  0.06074503,  0.50408641,
+                        -0.1424163,   0.77721656, -0.34863865,  0.27766309,  0.00355943,  0.15893443,
+                        0.39771177, -0.1131317,   0.89793995, -0.1507661,   0.35460463,  0.19562937,
+                        0.15674695,  0.86554097,  0.36059424,  0.23697669, -0.25426887,  0.19753333,
+                        0.03760321,  0.07496286,  0.74249165,  0.51360453,  0.28749698, -0.31978435,
+                    ])
+    
 count = 0
 
 while True:
     mujoco.mj_step(model, data)
+    data.ten_length[:] = [0.30] * 24
     viewer.render()
     #time.sleep(0.01)
     #print(data.actuator_force)
     #print("tendon_length: ", data.ten_length)
-    print("imu: ", data.sensordata)
+    #print("imu: ", data.sensordata)
     #print("ctrl: ", data.ctrl)
+    print("pos: ", data.qpos)
     count += 1
-    time.sleep(1)
+    time.sleep(0.01)
 
 """
 ## PID control

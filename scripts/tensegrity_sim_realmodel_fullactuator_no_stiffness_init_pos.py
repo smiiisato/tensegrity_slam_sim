@@ -37,7 +37,7 @@ PLOT_REWARD = False
 INITIAL_TENSION = 0.0
 
 
-class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle):
+class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": [
             "human",
@@ -62,13 +62,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         """
         resume training is abandoned due to mujoco supports evaluation along with training
         """
-
         # ema filter
         self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
         # initial encoder value
-        self.enc_value = np.array([0.0]*24)
-        # initial tendon length
-        self.prev_ten_length = None
+        # initial tendon length: 0.30
+        self.enc_value = np.array([-3.0]*24)
+
 
         self.test = test
         self.is_params_set = False
@@ -177,7 +176,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         obs = imu + enc_value + actions + commands
         """
         diff_ten_length = np.array(ten_length) - self.prev_ten_length
-        diff_enc_value = -1.0 * (diff_ten_length / (0.01 * np.pi) * 6.0) # spool一周 = 0.01*pi # 6.0 = encoder一周 
+        diff_enc_value = -1.0* (diff_ten_length / (0.01 * np.pi) * 6.0) # spool一周 = 0.01*pi # 6.0 = encoder一周 # エンコーダは短くなる向きに巻き取る
         self.enc_value += diff_enc_value
         return np.concatenate((imu_data, self.enc_value, actions.flatten(), commands))
 
@@ -266,7 +265,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         self.prev_action = action
         # update prev_ten_length
         self.prev_ten_length = np.array(self.data.ten_length)
-
+        #print("ten_length: ", self.data.ten_length)
         rew_dict = {}
         if self.test:
             """
@@ -345,18 +344,18 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         # self.max_episode = 512 + 1024 * self.step_rate
 
         # sample random initial pose
-        qpos_addition = np.random.uniform(-0.00, 0.00, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        qpos_addition = np.random.uniform(-0.02, 0.02, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
 
-        qpos = self.default_init_qpos + qpos_addition
-        if (self.init_robot_in_air and self.step_rate > 0.2) or self.test:
-            qpos += np.array([0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0
-                              ]) * np.random.uniform(0.00, 0.00)
-
+        qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
+                        -0.20092532,  0.350647,    0.11930152,  0.06542414,  0.79409071, -0.2563381,
+                        0.54759233,  0.06207542,  0.22993135,  0.20179415,  0.06074503,  0.50408641,
+                        -0.1424163,   0.77721656, -0.34863865,  0.27766309,  0.00355943,  0.15893443,
+                        0.39771177, -0.1131317,   0.89793995, -0.1507661,   0.35460463,  0.19562937,
+                        0.15674695,  0.86554097,  0.36059424,  0.23697669, -0.25426887,  0.19753333,
+                        0.03760321,  0.07496286,  0.74249165,  0.51360453,  0.28749698, -0.31978435,
+                    ])
+        qpos += qpos_addition
+    
         # sample random initial vel
         qvel_addition = np.random.uniform(-0.0, 0.0, len(self.default_init_qvel)) * self.step_rate
         qvel = self.default_init_qvel + qvel_addition
@@ -374,8 +373,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         # ema filter
         self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
         # initial encoder value
-        self.enc_value = np.array([0.0]*24)
+        # initial tendon length: 0.30
+        self.enc_value = np.array([-3.0]*24)
         # initial tendon length
+        self.data.ten_length[:] = [0.30]*24
         self.prev_ten_length = self.data.ten_length
 
         # calculate the current step observations and fill out the observation buffer
