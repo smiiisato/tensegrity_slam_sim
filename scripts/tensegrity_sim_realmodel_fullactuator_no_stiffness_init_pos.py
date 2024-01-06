@@ -31,7 +31,8 @@ def rescale_actions(low, high, action):
 
 
 ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_ENC_VALUE_OBSERVATION = True
+ADD_ENC_VALUE_OBSERVATION = False
+USE_QUATERNION_OBSERVATION = True
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
@@ -82,6 +83,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
 
         self.add_tendon_len_obs = ADD_TENDON_LENGTH_OBSERVATION
         self.add_enc_value_obs = ADD_ENC_VALUE_OBSERVATION
+        self.use_quaternion_obs = USE_QUATERNION_OBSERVATION
         self.plot_reward = PLOT_REWARD
         self.initial_tension = INITIAL_TENSION
         
@@ -98,6 +100,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
             num_obs_per_step += 24
         if self.add_enc_value_obs:
             num_obs_per_step += 24
+        if self.use_quaternion_obs:
+            num_obs_per_step += 24*2
+            num_obs_per_step -= 36
     
         self.n_obs_step = 1
         observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(num_obs_per_step*self.n_obs_step,))
@@ -179,6 +184,13 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         diff_enc_value = -1.0* (diff_ten_length / (0.01 * np.pi) * 6.0) # spool一周 = 0.01*pi # 6.0 = encoder一周 # エンコーダは短くなる向きに巻き取る
         self.enc_value += diff_enc_value
         return np.concatenate((imu_data, self.enc_value, actions.flatten(), commands))
+    
+    def _get_current_obs3(self, qpos, ten_length, actions, commands):
+        """
+        obs = quaternion + ten_len + actions + commands
+        """
+        body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
+        return np.concatenate((body_quat.flatten(), ten_length, actions.flatten(), commands))
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
@@ -233,6 +245,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
             imu_data = self.ema_filter.update(self.data.sensordata)
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs2(imu_data, tendon_length, action, self.vel_command)
+        elif self.use_quaternion_obs:
+            qpos = self.data.qpos
+            tendon_length = self.data.ten_length
+            cur_step_obs = self._get_current_obs3(qpos, tendon_length, action, self.vel_command)
         self.obs_deque.appendleft(cur_step_obs)
         obs = self._get_stack_obs()
 
@@ -344,16 +360,26 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         # self.max_episode = 512 + 1024 * self.step_rate
 
         # sample random initial pose
+        
         qpos_addition = np.random.uniform(-0.02, 0.02, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
-
-        qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
+        self.data.ten_length[:] = [0.30]*24
+        qpos = np.array([-1.18984625e-01,  4.63494792e-04,  2.47213290e-01,  9.82661423e-01, -2.74916764e-03,  1.11122860e-02, -1.85055361e-01,  
+                         1.37937407e-01,  -1.15811175e-03,  2.46882063e-01,  9.99695948e-01,  2.19814322e-03,  2.45588049e-02,  2.10299991e-04,  
+                         6.66250341e-03,   1.10618851e-01,  2.18362927e-01,  6.99977926e-01,  3.64139513e-03,  7.14153931e-01,  1.34407546e-03,  
+                         8.56161190e-03,  -1.09258606e-01,  2.21433970e-01,  6.94595037e-01,  5.56256183e-02,  7.16151973e-01,  3.96216596e-02,
+                         8.47204181e-03,  -1.07714591e-03,  3.47549673e-01,  7.04564028e-01,  7.09531554e-01, -9.15995917e-03,  8.40233416e-03,  
+                         2.45486510e-03,   3.33814398e-04,  7.05319175e-02,  7.09541174e-01,  7.04166615e-01,  1.63291203e-02, -2.08341113e-02,
+                        ])
+        
+        # stable initial pose
+        """ qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
                         -0.20092532,  0.350647,    0.11930152,  0.06542414,  0.79409071, -0.2563381,
                         0.54759233,  0.06207542,  0.22993135,  0.20179415,  0.06074503,  0.50408641,
                         -0.1424163,   0.77721656, -0.34863865,  0.27766309,  0.00355943,  0.15893443,
                         0.39771177, -0.1131317,   0.89793995, -0.1507661,   0.35460463,  0.19562937,
                         0.15674695,  0.86554097,  0.36059424,  0.23697669, -0.25426887,  0.19753333,
                         0.03760321,  0.07496286,  0.74249165,  0.51360453,  0.28749698, -0.31978435,
-                    ])
+                    ]) """
         qpos += qpos_addition
     
         # sample random initial vel
@@ -388,6 +414,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, zero_actions, self.vel_command)
         elif self.add_enc_value_obs:
             cur_step_obs = self._get_current_obs2(imu_data, tendon_length, zero_actions, self.vel_command)
+        elif self.use_quaternion_obs:
+            qpos = self.data.qpos
+            cur_step_obs = self._get_current_obs3(qpos, tendon_length, zero_actions, self.vel_command)
         for i in range(self.n_obs_step):
             self.obs_deque.appendleft(cur_step_obs)
         # update the com state

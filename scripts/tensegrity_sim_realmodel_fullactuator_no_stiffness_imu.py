@@ -30,10 +30,11 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_ENC_VALUE_OBSERVATION = True
+ADD_TENDON_LENGTH_OBSERVATION = True
+ADD_ENC_VALUE_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
+PLOT_SENSOR = True
 INITIAL_TENSION = 0.0
 
 
@@ -62,7 +63,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         """
         resume training is abandoned due to mujoco supports evaluation along with training
         """
-
+        self.plot_sensor = PLOT_SENSOR
+        if self.plot_sensor:
+            # sensor data
+            self.sensor_data = []
+            self.ema_data = []
+            
         # ema filter
         self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
         # initial encoder value
@@ -183,7 +189,17 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
-    
+    def plot_sensor_data(self):
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.plot(self.sensor_data)
+        plt.plot(self.ema_data)
+        plt.title("Acceleration Sensor Data")
+        plt.xlabel("Step")
+        plt.ylabel("link1_acceleration[x]")
+        plt.show()
+        
     def step(self, action):
         """
         what we need do inside the step():
@@ -228,6 +244,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         # calculate the observations and update the observation deque
         if self.add_tendon_len_obs:
             imu_data = self.ema_filter.update(self.data.sensordata)
+            if self.plot_sensor:
+                self.ema_data.append(imu_data[0])
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs(imu_data, tendon_length, action, self.vel_command)
         elif self.add_enc_value_obs:
@@ -326,6 +344,16 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             self.current_step_total_reward += -5.0
 
         truncated = not (self.episode_cnt < self.max_episode)
+        
+        # save sensor data
+        self.sensor_data.append(self.data.sensordata[0])
+        if terminated or truncated:
+            if self.plot_sensor:
+                # self.sensor_data = np.array(self.sensor_data)
+                # self.sensor_data = self.sensor_data.reshape(-1, 6)
+                # np.save("sensor_data.npy", self.sensor_data)
+                # print("sensor data saved!")
+                self.plot_sensor_data()
 
         return (
             obs,
@@ -336,6 +364,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         )
 
     def reset_model(self):
+        
+        if self.sensor_data:
+            self.sensor_data.clear()
+            self.ema_data.clear()
 
         self.episode_cnt = 0
 
@@ -372,7 +404,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             self.vel_command = [v, 0.0, 0.0]
 
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
+        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36)) ## TODO: will cahnge to 0.1
         # initial encoder value
         self.enc_value = np.array([0.0]*24)
         # initial tendon length

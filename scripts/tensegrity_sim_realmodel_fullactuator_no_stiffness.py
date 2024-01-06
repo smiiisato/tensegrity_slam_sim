@@ -24,13 +24,14 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-USE_ANG_VEL_OBS = True
-USE_ONLY_TENDON_LENGTH_OBS = False
+USE_ANG_VEL_OBS = False
+USE_ONLY_TENDON_LENGTH_OBS = True
 ADD_ASSISTIVE_FORCE = False
-ADD_TENDON_LENGTH_OBSERVATION = True
-ADD_TENDON_VEL_OBSERVATION = True
+ADD_TENDON_LENGTH_OBSERVATION = False
+ADD_TENDON_VEL_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
+PLOT_SENSOR = False
 INITIAL_TENSION = 0.0
 
 
@@ -59,6 +60,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         """
         resume training is abandoned due to mujoco supports evaluation along with training
         """
+        self.plot_sensor = PLOT_SENSOR
+        if self.plot_sensor:
+            # sensor data
+            self.sensor_data = []
 
         self.test = test
         self.is_params_set = False
@@ -287,6 +292,16 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         
         plt.show(block=False)
         
+    def plot_sensor_data(self):
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.plot(self.sensor_data)
+        plt.title("Acceleration Sensor Data")
+        plt.xlabel("Step")
+        plt.ylabel("link1_acceleration_x")
+        plt.show()
+        
     def step(self, action):
         """
         what we need do inside the step():
@@ -439,6 +454,17 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
             self.current_step_total_reward += -5.0
 
         truncated = not (self.episode_cnt < self.max_episode)
+        
+        # save sensor 
+        if self.plot_sensor:
+            self.sensor_data.append(self.data.sensordata[0])
+        if terminated or truncated:
+            if self.plot_sensor:
+                # self.sensor_data = np.array(self.sensor_data)
+                # self.sensor_data = self.sensor_data.reshape(-1, 6)
+                # np.save("sensor_data.npy", self.sensor_data)
+                # print("sensor data saved!")
+                self.plot_sensor_data()
 
         return (
             obs,
@@ -449,6 +475,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         )
 
     def reset_model(self):
+        
+        if self.plot_sensor:
+            self.sensor_data.clear()
 
         self.episode_cnt = 0
 
@@ -458,17 +487,30 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         # self.max_episode = 512 + 1024 * self.step_rate
 
         # sample random initial pose
-        qpos_addition = np.random.uniform(-0.00, 0.00, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        # qpos_addition = np.random.uniform(-0.00, 0.00, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        # initial tendon length
+        self.data.ten_length[:] = [0.30]*24
+        qpos_addition = np.random.uniform(-0.02, 0.02, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
 
-        qpos = self.default_init_qpos + qpos_addition
-        if (self.init_robot_in_air and self.step_rate > 0.2) or self.test:
-            qpos += np.array([0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0,
-                              0, 0, 1, 0, 0, 0, 0
-                              ]) * np.random.uniform(0.00, 0.00)
+        qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
+                        -0.20092532,  0.350647,    0.11930152,  0.06542414,  0.79409071, -0.2563381,
+                        0.54759233,  0.06207542,  0.22993135,  0.20179415,  0.06074503,  0.50408641,
+                        -0.1424163,   0.77721656, -0.34863865,  0.27766309,  0.00355943,  0.15893443,
+                        0.39771177, -0.1131317,   0.89793995, -0.1507661,   0.35460463,  0.19562937,
+                        0.15674695,  0.86554097,  0.36059424,  0.23697669, -0.25426887,  0.19753333,
+                        0.03760321,  0.07496286,  0.74249165,  0.51360453,  0.28749698, -0.31978435,
+                    ])
+        qpos += qpos_addition
+    
+        # qpos = self.default_init_qpos + qpos_addition
+        # if (self.init_robot_in_air and self.step_rate > 0.2) or self.test:
+        #     qpos += np.array([0, 0, 1, 0, 0, 0, 0,
+        #                       0, 0, 1, 0, 0, 0, 0,
+        #                       0, 0, 1, 0, 0, 0, 0,
+        #                       0, 0, 1, 0, 0, 0, 0,
+        #                       0, 0, 1, 0, 0, 0, 0,
+        #                       0, 0, 1, 0, 0, 0, 0
+        #                       ]) * np.random.uniform(0.00, 0.00)
 
         # sample random initial vel
         qvel_addition = np.random.uniform(-0.0, 0.0, len(self.default_init_qvel)) * self.step_rate
