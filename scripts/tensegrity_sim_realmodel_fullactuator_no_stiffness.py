@@ -123,7 +123,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
         self.step_rate = 0.
         if self.test:
-            self.step_rate = 1.0
+            self.step_rate = 0.0
             if self.plot_reward:
                 self.draw_reward()
 

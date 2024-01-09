@@ -109,7 +109,7 @@ def main():
 
     batch_size_per_env = int(np.ceil(float(args.batch_size) / args.n_env))
     policy_kwargs = dict(activation_fn=torch.nn.Tanh,
-                         net_arch=dict(pi=[512, 256], vf=[512, 256]),  # changed from [256, 128]
+                         net_arch=dict(pi=[512, 512, 256, 128], vf=[512, 512, 256, 128]),  # changed from [512, 256]
                          log_std_init=-2.1,)  # -2.1  for ppo19
     model = PPO("MlpPolicy",
                 env,

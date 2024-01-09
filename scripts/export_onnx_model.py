@@ -33,8 +33,8 @@ class OnnxablePolicyWithObsNormalize(th.nn.Module):
         return self.action_net(action_hidden)
 
 
-trial = 264
-load_step = 399360000
+trial = 279
+load_step = 242073600
 obs_clip_range = 100
 
 root_dir = os.path.dirname(os.path.abspath(__file__))

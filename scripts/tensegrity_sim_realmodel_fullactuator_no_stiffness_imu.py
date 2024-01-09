@@ -30,11 +30,11 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-ADD_TENDON_LENGTH_OBSERVATION = True
-ADD_ENC_VALUE_OBSERVATION = False
+ADD_TENDON_LENGTH_OBSERVATION = False
+ADD_ENC_VALUE_OBSERVATION = True
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
-PLOT_SENSOR = True
+PLOT_SENSOR = False
 INITIAL_TENSION = 0.0
 
 
@@ -346,7 +346,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
         truncated = not (self.episode_cnt < self.max_episode)
         
         # save sensor data
-        self.sensor_data.append(self.data.sensordata[0])
+        if self.plot_sensor:
+            self.sensor_data.append(self.data.sensordata[0])
         if terminated or truncated:
             if self.plot_sensor:
                 # self.sensor_data = np.array(self.sensor_data)
@@ -365,7 +366,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
 
     def reset_model(self):
         
-        if self.sensor_data:
+        if self.plot_sensor:
             self.sensor_data.clear()
             self.ema_data.clear()
 

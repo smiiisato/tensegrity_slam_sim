@@ -15,6 +15,7 @@ from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 from rospkg import RosPack
+import csv
 
 from EMAfilter import EMAFilter
 
@@ -31,11 +32,12 @@ def rescale_actions(low, high, action):
 
 
 ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_ENC_VALUE_OBSERVATION = False
-USE_QUATERNION_OBSERVATION = True
+ADD_ENC_VALUE_OBSERVATION = True
+USE_QUATERNION_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
+LOG_TENSION_FORCE = True
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPickle):
@@ -86,6 +88,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         self.use_quaternion_obs = USE_QUATERNION_OBSERVATION
         self.plot_reward = PLOT_REWARD
         self.initial_tension = INITIAL_TENSION
+        self.log_to_csv = LOG_TENSION_FORCE
         
         # control range
         self.num_actions = 24
@@ -125,11 +128,16 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
 
         self.step_rate = 0.
         if self.test:
-            self.step_rate = 1.0
+            self.step_rate = 0.2
             if self.plot_reward:
                 self.draw_reward()
-
+                
         self.rospack = RosPack()
+        if self.log_to_csv:
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/enc_0108.csv'
+            self.create_log_file()
+            #self.create_log_file_imu()
+
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
         MujocoEnv.__init__(
@@ -154,6 +162,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
                                                                                 "link{}".format(i+1))]) for i in range(6)]
 
         self.prev_com_pos = np.array([0., 0., 0.])
+        self.default_ten_length = np.array([0.30]*24)
         self.reset_model()
 
     def _set_render_param(self):
@@ -180,20 +189,74 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         """
         obs = imu + enc_value + actions + commands
         """
-        diff_ten_length = np.array(ten_length) - self.prev_ten_length
+        diff_ten_length = np.array(ten_length) - self.default_ten_length
         diff_enc_value = -1.0* (diff_ten_length / (0.01 * np.pi) * 6.0) # spool一周 = 0.01*pi # 6.0 = encoder一周 # エンコーダは短くなる向きに巻き取る
-        self.enc_value += diff_enc_value
+        # add noise to enc_value
+        enc_value_noise = np.random.uniform(-1.0, 1.0, 24) * self.step_rate
+        #self.enc_value += (diff_enc_value + enc_value_noise)
+        # fixed the calculation
+        self.enc_value = (diff_enc_value + enc_value_noise)
+        
+        # add noise to imu_data
+        imu_data = np.random.uniform(1.0 - self.step_rate*0.05, 1.0 + self.step_rate*0.05, 36) * imu_data
         return np.concatenate((imu_data, self.enc_value, actions.flatten(), commands))
     
     def _get_current_obs3(self, qpos, ten_length, actions, commands):
         """
         obs = quaternion + ten_len + actions + commands
         """
+        # add noise to quaternion
+        body_quat_noise = np.random.uniform(-0.02, 0.02, 6*4).reshape((-1, 4))
         body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
+        body_quat += body_quat_noise
+        
+        # add noise to ten_length
+        ten_length_noise = np.random.uniform(-0.02, 0.02, 24)
+        ten_length += ten_length_noise
         return np.concatenate((body_quat.flatten(), ten_length, actions.flatten(), commands))
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
+    
+    def draw_reward(self):
+        import matplotlib.pyplot as plt
+        from matplotlib.animation import FuncAnimation
+        
+        self.fig1, self.ax1 = plt.subplots()
+        self.xdata1, self.ydata1 = [], []
+        self.ln1, = plt.plot([], [], 'r-', animated=True)
+        def init1():
+            self.ax1.set_xlim(0, 1000)
+            self.ax1.set_ylim(-2, 2)
+            self.ax1.set_ylabel("forward_x_reward")
+            return self.ln1,
+        def update1(frame):
+            self.xdata1.append(frame)
+            self.ydata1.append(self.velocity_reward)
+            self.ln1.set_data(self.xdata1, self.ydata1)
+            return self.ln1,
+        ani1 = FuncAnimation(self.fig1, update1, frames=np.linspace(0, 1000, 1000),  
+                            init_func=init1, blit=True)
+        
+    def create_log_file(self):
+        import csv
+        with open(self.log_file, 'w') as f:
+            writer = csv.writer(f)
+            header = ['Step'] + [f'data_{i+1}' for i in range(24)]
+            writer.writerow(header)
+            
+    def create_log_file_imu(self):
+        import csv
+        with open(self.log_file, 'w') as f:
+            writer = csv.writer(f)
+            header = ['Step'] + [f'data_{i+1}' for i in range(36)]
+            writer.writerow(header)
+            
+    def log_tension_force(self, step, tension_force):
+        with open(self.log_file, 'a') as f:
+            writer = csv.writer(f)
+            data = [step] + list(tension_force)
+            writer.writerow(data)
     
     def step(self, action):
         """
@@ -229,6 +292,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         # add action(tension force) noise from [0.95, 1.05]--> percentage
         tension_force *= np.random.uniform(0.98, 1.02, self.num_actions)
         average_tension_force = np.mean(tension_force)
+
         # do simulation
         self._step_mujoco_simulation(tension_force, self.frame_skip)  # self.frame_skip=2, mujoco_step=200hz [0.95, 1.05]
 
@@ -277,6 +341,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         #self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
         self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
         
+        # log data to csv
+        if self.log_to_csv:
+            #self.log_tension_force(self.step_cnt, tension_force)
+            #self.log_tension_force(self.step_cnt, obs[36:60])
+            self.log_tension_force(self.step_cnt, self.data.ten_length)
+        
         ## update prev_action
         self.prev_action = action
         # update prev_ten_length
@@ -307,8 +377,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
             #self.fig1.canvas.draw()
             #self.fig1.canvas.flush_events()
             if self.plot_reward:
-                self.fig2.canvas.draw()
-                self.fig2.canvas.flush_events()
+                self.fig1.canvas.draw()
+                self.fig1.canvas.flush_events()
             #print("actutor velocity", self.data.actuator_velocity[0:3])
             #print("tendon velocity", self.data.ten_velocity[0:3])
             #print("diff velocity", self.data.ten_velocity[0:3]/1.0 - self.data.actuator_velocity[0:3])
@@ -349,7 +419,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
             truncated,
             rew_dict
         )
-
+    
+    
     def reset_model(self):
 
         self.episode_cnt = 0
@@ -361,8 +432,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
 
         # sample random initial pose
         
-        qpos_addition = np.random.uniform(-0.02, 0.02, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        qpos_addition = np.random.uniform(-0.03, 0.03, len(self.default_init_qpos)) * min(self.step_rate*2, 1.0)  # TODO:BUG
         self.data.ten_length[:] = [0.30]*24
+        self.enc_value = np.array([0.0]*24)
         qpos = np.array([-1.18984625e-01,  4.63494792e-04,  2.47213290e-01,  9.82661423e-01, -2.74916764e-03,  1.11122860e-02, -1.85055361e-01,  
                          1.37937407e-01,  -1.15811175e-03,  2.46882063e-01,  9.99695948e-01,  2.19814322e-03,  2.45588049e-02,  2.10299991e-04,  
                          6.66250341e-03,   1.10618851e-01,  2.18362927e-01,  6.99977926e-01,  3.64139513e-03,  7.14153931e-01,  1.34407546e-03,  
