@@ -24,7 +24,7 @@ viewer = mujoco_viewer.MujocoViewer(model, data)
 model.opt.gravity = [0.0, 0, -9.8]
 data.ten_length[:] = [0.30]*24
 qpos_addition = np.random.uniform(-0.02, 0.02, 42)   # TODO:BUG    
-data.qpos = np.array([-1.18984625e-01,  4.63494792e-04,  2.47213290e-01,  9.82661423e-01,
+""" data.qpos = np.array([-1.18984625e-01,  4.63494792e-04,  2.47213290e-01,  9.82661423e-01,
  -2.74916764e-03,  1.11122860e-02, -1.85055361e-01,  1.37937407e-01,
  -1.15811175e-03,  2.46882063e-01,  9.99695948e-01,  2.19814322e-03,
   2.45588049e-02,  2.10299991e-04,  6.66250341e-03,  1.10618851e-01,
@@ -37,19 +37,20 @@ data.qpos = np.array([-1.18984625e-01,  4.63494792e-04,  2.47213290e-01,  9.8266
   1.63291203e-02, -2.08341113e-02,
                     ]) + qpos_addition
 count = 0
+ """
+data.ctrl[:] = [-0.0] * 24
 
 while True:
     mujoco.mj_step(model, data)
-    data.ten_length[:] = [0.30] * 24
+    #data.ten_length[:] = [0.30] * 24
     viewer.render()
     #time.sleep(0.01)
-    #print(data.actuator_force)
-    print("tendon_length: ", data.ten_length)
+    print(data.actuator_force)
+    #print("tendon_length: ", data.ten_length)
     #print("imu: ", data.sensordata)
     #print("ctrl: ", data.ctrl)
-    print("pos: ", data.qpos)
-    count += 1
-    time.sleep(0.1)
+    #print("pos: ", data.qpos)
+    time.sleep(0.01)
 
 """
 ## PID control

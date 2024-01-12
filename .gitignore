@@ -5,3 +5,4 @@ MUJOCO_LOG.TXT
 .vscode
 saved/
 scripts/__pycache__/
+logs/

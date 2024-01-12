@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from rospkg import RosPack
 
-FILE_NAME = 'enc_0108.csv'
+FILE_NAME = 'ten_len_0111.csv'
 
 # CSVファイルを読み込む
 rospack = RosPack()

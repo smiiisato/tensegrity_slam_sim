@@ -44,6 +44,7 @@ def parser():
     parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gamma", type=float, default=0.99, help="discount factor")
     parser.add_argument("--save_interval", type=int, default=50, help="interval of iteration to save network weight")
+    parser.add_argument("--net_layer", type=int, default=5, help="number of layer of network") # network layer number
 
     # test-related params
     parser.add_argument("--render", type=int, default=1, help="Render or not (only when testing)")
@@ -108,8 +109,23 @@ def main():
                                     render_mode="human")])
 
     batch_size_per_env = int(np.ceil(float(args.batch_size) / args.n_env))
+    if args.net_layer == 5:
+        pi_arch = [512, 512, 512, 256, 128]
+        vf_arch = [512, 512, 512, 256, 128]
+    elif args.net_layer == 4:
+        pi_arch = [512, 512, 256, 128]
+        vf_arch = [512, 512, 256, 128]
+    elif args.net_layer == 6:
+        pi_arch = [512, 512, 512, 256, 256, 128]
+        vf_arch = [512, 512, 512, 256, 256, 128]
+    elif args.net_layer == 7:
+        pi_arch = [512, 512, 512, 512, 256, 256, 128]
+        vf_arch = [512, 512, 512, 512, 256, 256, 128]
+    elif args.net_layer == 3:
+        pi_arch = [512, 256, 128]
+        vf_arch = [512, 256, 128]
     policy_kwargs = dict(activation_fn=torch.nn.Tanh,
-                         net_arch=dict(pi=[512, 512, 256, 128], vf=[512, 512, 256, 128]),  # changed from [512, 256]
+                         net_arch=dict(pi=pi_arch, vf=vf_arch),  # changed from [512, 256] 
                          log_std_init=-2.1,)  # -2.1  for ppo19
     model = PPO("MlpPolicy",
                 env,
