@@ -21,6 +21,9 @@ from tensegrity_sim_realmodel_fullactuator_linear_velocity import TensegrityEnvR
 from tensegrity_sim_realmodel_fullactuator_no_stiffness import TensegrityEnvRealModelFullActuatorNoStiffness
 from tensegrity_sim_realmodel_fullactuator_no_stiffness_imu import TensegrityEnvRealModelFullActuatorNoStiffnessImu
 from tensegrity_sim_realmodel_fullactuator_no_stiffness_init_pos import TensegrityEnvRealModelFullActuatorNoStiffnessInitPos
+from tensegrity_sim_realmodel_fullactuator_no_stiffness_terminate import TensegrityEnvRealModelFullActuatorNoStiffnessTerminate
+from tensegrity_sim_realmodel_fullactuator_no_stiffness_penalty import TensegrityEnvRealModelFullActuatorNoStiffnessPenalty
+from tensegrity_sim_realmodel_fullactuator_no_stiffness_velocity_command import TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand
 
 
 def parser():
@@ -44,7 +47,7 @@ def parser():
     parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gamma", type=float, default=0.99, help="discount factor")
     parser.add_argument("--save_interval", type=int, default=50, help="interval of iteration to save network weight")
-    parser.add_argument("--net_layer", type=int, default=5, help="number of layer of network") # network layer number
+    parser.add_argument("--net_layer", type=int, default=6, help="number of layer of network") # network layer number
 
     # test-related params
     parser.add_argument("--render", type=int, default=1, help="Render or not (only when testing)")
@@ -61,13 +64,17 @@ def make_env(test, max_step, act_range=6.0, resume=False, render_mode=None):
     args = parser().parse_args()
 
     def _init():
-        env_class_options = [TensegrityEnv, 
-                             TensegrityEnvRealModelFullActuatorVelocity, 
-                             TensegrityEnvRealModelFullActuatorAngularMomentum,
-                             TensegrityEnvRealModelFullActuatorLinearVelocity,
-                             TensegrityEnvRealModelFullActuatorNoStiffness,
-                             TensegrityEnvRealModelFullActuatorNoStiffnessImu,
-                             TensegrityEnvRealModelFullActuatorNoStiffnessInitPos]  # TODO: add new env class here
+        env_class_options = [TensegrityEnv, # 1
+                             TensegrityEnvRealModelFullActuatorVelocity, # 2
+                             TensegrityEnvRealModelFullActuatorAngularMomentum, # 3
+                             TensegrityEnvRealModelFullActuatorLinearVelocity, # 4
+                             TensegrityEnvRealModelFullActuatorNoStiffness, # 5
+                             TensegrityEnvRealModelFullActuatorNoStiffnessImu, # 6
+                             TensegrityEnvRealModelFullActuatorNoStiffnessInitPos, # 7
+                             TensegrityEnvRealModelFullActuatorNoStiffnessTerminate, # 8
+                             TensegrityEnvRealModelFullActuatorNoStiffnessPenalty, # 9
+                             TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand, # 10
+                             ]  # TODO: add new env class here
         env_cls = env_class_options[args.sim_env-1]
         info_key = env_cls.info_keywords
         # print(info_key)

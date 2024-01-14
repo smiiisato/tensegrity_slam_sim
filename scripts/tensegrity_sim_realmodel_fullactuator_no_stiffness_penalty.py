@@ -1,5 +1,5 @@
 """
-this script uses the imu data from the real robot instead of quaternion value to train the tensegrity robot in simulation
+this script uses the real ema parameters and adds action penalty
 """
 
 import copy
@@ -35,14 +35,14 @@ ADD_TENDON_LENGTH_OBSERVATION = False
 ADD_ENC_VALUE_OBSERVATION = False
 USE_QUATERNION_OBSERVATION = False
 USE_ONLY_IMU_OBSERVATION = False
-USE_ACC_TENDON_OBSERVATION = True
+USE_ACC_TENDON_OBSERVATION = True ## only use this observation
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
-LOG_TENSION_FORCE = True
+LOG_TENSION_FORCE = False
 
 
-class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPickle):
+class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": [
             "human",
@@ -68,11 +68,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         resume training is abandoned due to mujoco supports evaluation along with training
         """
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
-        # initial encoder value
+        self.ema_filter = EMAFilter(0.268, np.array([0.0]*36)) ## 0.268 for 100Hz
         # initial tendon length: 0.30
-        self.enc_value = np.array([0.0]*24)
-
 
         self.test = test
         self.is_params_set = False
@@ -141,9 +138,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
                 
         self.rospack = RosPack()
         if self.log_to_csv:
-            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/tension_0114.csv'
-            self.create_log_file()
-            #self.create_log_file_imu()
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/imu_0114.csv'
+            #self.create_log_file()
+            self.create_log_file_imu()
 
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
@@ -197,47 +194,6 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         ten_length = np.random.uniform(1.0 - self.step_rate*0.05, 1.0 + self.step_rate*0.05, 24) * ten_length
         #print("ten_length: ", ten_length)
         return np.concatenate((imu_data, ten_length, actions.flatten(), commands))
-
-    def _get_current_obs2(self, imu_data, ten_length, actions, commands):
-        """
-        obs = imu + enc_value + actions + commands
-        """
-        diff_ten_length = np.array(ten_length) - self.default_ten_length
-        diff_enc_value = -1.0* (diff_ten_length / (0.01 * np.pi) * 6.0) # spool一周 = 0.01*pi # 6.0 = encoder一周 # エンコーダは短くなる向きに巻き取る
-        # add noise to enc_value
-        enc_value_noise = np.random.uniform(-1.0, 1.0, 24) * self.step_rate
-        #self.enc_value += (diff_enc_value + enc_value_noise)
-        # fixed the calculation
-        self.enc_value = (diff_enc_value + enc_value_noise)
-        self.enc_value = np.clip(self.enc_value, 0.0, 10.0)
-        #self.enc_value += (diff_enc_value + enc_value_noise)
-        #print("enc_value: ", self.enc_value)
-        
-        # add noise to imu_data
-        imu_data = np.random.uniform(1.0 - self.step_rate*0.05, 1.0 + self.step_rate*0.05, 36) * imu_data
-        return np.concatenate((imu_data, self.enc_value, actions.flatten(), commands))
-    
-    def _get_current_obs3(self, qpos, ten_length, actions, commands):
-        """
-        obs = quaternion + ten_len + actions + commands
-        """
-        # add noise to quaternion
-        body_quat_noise = np.random.uniform(-0.02, 0.02, 6*4).reshape((-1, 4))
-        body_quat = qpos.reshape((-1, 7))[:, 3:]  # mujoco uses scaler-first quaternion [w, x, y, z]
-        body_quat += body_quat_noise
-        
-        # add noise to ten_length
-        ten_length_noise = np.random.uniform(-0.02, 0.02, 24)
-        ten_length += ten_length_noise
-        return np.concatenate((body_quat.flatten(), ten_length, actions.flatten(), commands))
-    
-    def _get_current_obs4(self, imu_data, actions, commands):
-        """
-        obs = imu + actions + commands
-        """
-        # add noise to imu_data
-        imu_data = np.random.uniform(1.0 - self.step_rate*0.05, 1.0 + self.step_rate*0.05, 36) * imu_data
-        return np.concatenate((imu_data, actions.flatten(), commands))
     
     def _get_current_obs_5(self, acc_data, ten_length, actions, commands):
         """
@@ -252,32 +208,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
     
-    def draw_reward(self):
-        import matplotlib.pyplot as plt
-        from matplotlib.animation import FuncAnimation
-        
-        self.fig1, self.ax1 = plt.subplots()
-        self.xdata1, self.ydata1 = [], []
-        self.ln1, = plt.plot([], [], 'r-', animated=True)
-        def init1():
-            self.ax1.set_xlim(0, 1000)
-            self.ax1.set_ylim(-2, 2)
-            self.ax1.set_ylabel("forward_x_reward")
-            return self.ln1,
-        def update1(frame):
-            self.xdata1.append(frame)
-            self.ydata1.append(self.velocity_reward)
-            self.ln1.set_data(self.xdata1, self.ydata1)
-            return self.ln1,
-        ani1 = FuncAnimation(self.fig1, update1, frames=np.linspace(0, 1000, 1000),  
-                            init_func=init1, blit=True)
-        
     def create_log_file(self):
-        import csv
         with open(self.log_file, 'w') as f:
             writer = csv.writer(f)
-            header = ['Step'] + [f'data_{i+1}' for i in range(24)]
-            writer.writerow(header)
             
     def create_log_file_imu(self):
         import csv
@@ -324,7 +257,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         self.data.xfrc_applied[:] = 0.0
         
         # add action(tension force) noise from [0.95, 1.05]--> percentage
-        tension_force *= np.random.uniform(0.98, 1.02, self.num_actions)
+        tension_force *= np.random.uniform(0.95, 1.05, self.num_actions) # changed from 0.98, 1.02
         average_tension_force = np.mean(tension_force)
 
         # do simulation
@@ -335,25 +268,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         self.step_cnt += 1
 
         # calculate the observations and update the observation deque
-        if self.use_only_imu_obs:
-            imu_data = self.ema_filter.update(self.data.sensordata)
-            cur_step_obs = self._get_current_obs4(imu_data, action, self.vel_command)
-        elif self.add_tendon_len_obs:
-            imu_data = self.ema_filter.update(self.data.sensordata)
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs(imu_data, tendon_length, action, self.vel_command)
-        elif self.add_enc_value_obs:
-            imu_data = self.ema_filter.update(self.data.sensordata)
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs2(imu_data, tendon_length, action, self.vel_command)
-        elif self.use_acc_tendon_obs:
+        if self.use_acc_tendon_obs:
             acc_data = self.ema_filter.update(self.data.sensordata).reshape(-1, 6)[:, :3].flatten()
             tendon_length = self.data.ten_length
             cur_step_obs = self._get_current_obs_5(acc_data, tendon_length, action, self.vel_command)
-        elif self.use_quaternion_obs:
-            qpos = self.data.qpos
-            tendon_length = self.data.ten_length
-            cur_step_obs = self._get_current_obs3(qpos, tendon_length, action, self.vel_command)
         self.obs_deque.appendleft(cur_step_obs)
         obs = self._get_stack_obs()
 
@@ -378,14 +296,14 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         self.ang_momentum_reward = current_ang_momentum[1] * int(current_ang_momentum[1] > 0.)
         
         self.action_penalty = -0.000 * np.linalg.norm(action) * self.step_rate # pre 0.001
-        self.contorl_penalty = -0.000 * np.linalg.norm(action - self.prev_action) * self.step_rate
+        self.contorl_penalty = -0.01 * np.linalg.norm(action - self.prev_action) * self.step_rate
         #self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
         self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
         
         # log data to csv
         if self.log_to_csv:
             self.log_tension_force(self.step_cnt, tension_force)
-            #self.log_tension_force(self.step_cnt, obs[0:36])
+            #self.log_tension_force(self.step_cnt, obs[0:18])
             #self.log_tension_force(self.step_cnt, self.data.sensordata)
             #self.log_tension_force(self.step_cnt, obs[36:60])
             #self.log_tension_force(self.step_cnt, self.data.ten_length)
@@ -513,8 +431,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         if self.test:
             self.vel_command = [0.8, 0.0, 0.0]
         else:
-            v = np.random.uniform(0.4, 0.4+self.step_rate*0.5)
-            #v = 0.8
+            #v = np.random.uniform(0.4, 0.7)
+            v = 0.8
             self.vel_command = [v, 0.0, 0.0]
 
         # ema filter
@@ -531,18 +449,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         # filter the imu data
         imu_data = self.ema_filter.update(self.data.sensordata)
         tendon_length = self.data.ten_length
-        if self.use_only_imu_obs:
-            cur_step_obs = self._get_current_obs4(imu_data, zero_actions, self.vel_command)
-        elif self.add_tendon_len_obs:
-            cur_step_obs = self._get_current_obs(imu_data, tendon_length, zero_actions, self.vel_command)
-        elif self.add_enc_value_obs:
-            cur_step_obs = self._get_current_obs2(imu_data, tendon_length, zero_actions, self.vel_command)
-        elif self.use_acc_tendon_obs:
+        if self.use_acc_tendon_obs:
             acc_data = imu_data.reshape(-1, 6)[:, :3].flatten()
             cur_step_obs = self._get_current_obs_5(acc_data, tendon_length, zero_actions, self.vel_command)
-        elif self.use_quaternion_obs:
-            qpos = self.data.qpos
-            cur_step_obs = self._get_current_obs3(qpos, tendon_length, zero_actions, self.vel_command)
+    
         for i in range(self.n_obs_step):
             self.obs_deque.appendleft(cur_step_obs)
         # update the com state
