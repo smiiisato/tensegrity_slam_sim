@@ -39,7 +39,7 @@ USE_ACC_TENDON_OBSERVATION = True ## only use this observation
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
-LOG_TENSION_FORCE = False
+LOG_TENSION_FORCE = True
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPickle):
@@ -138,9 +138,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
                 
         self.rospack = RosPack()
         if self.log_to_csv:
-            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/imu_0114.csv'
-            #self.create_log_file()
-            self.create_log_file_imu()
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/ten_len_0115.csv'
+            self.create_log_file()
+            #self.create_log_file_imu()
 
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
@@ -302,11 +302,11 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
         
         # log data to csv
         if self.log_to_csv:
-            self.log_tension_force(self.step_cnt, tension_force)
+            #self.log_tension_force(self.step_cnt, tension_force)
             #self.log_tension_force(self.step_cnt, obs[0:18])
             #self.log_tension_force(self.step_cnt, self.data.sensordata)
             #self.log_tension_force(self.step_cnt, obs[36:60])
-            #self.log_tension_force(self.step_cnt, self.data.ten_length)
+            self.log_tension_force(self.step_cnt, self.data.ten_length)
         
         ## update prev_action
         self.prev_action = action
@@ -436,7 +436,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
             self.vel_command = [v, 0.0, 0.0]
 
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
+        self.ema_filter = EMAFilter(0.267, np.array([0.0]*36))
         # initial encoder value
         # initial tendon length: 0.30
         self.enc_value = np.array([-3.0]*24)

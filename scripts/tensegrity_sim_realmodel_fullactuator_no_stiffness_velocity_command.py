@@ -120,7 +120,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand(MujocoEnv, ut
 
         self.step_rate = 0.
         if self.test:
-            self.step_rate = 0.3
+            self.step_rate = 1.0
             if self.plot_reward:
                 self.draw_reward()
                 
@@ -326,7 +326,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand(MujocoEnv, ut
             print("forward_x_reward", self.forward_x_reward)
             """
             #print("current reward", self.current_step_total_reward)
-            print("velocity_reward", self.velocity_reward)
+            #print("velocity_reward", self.velocity_reward)
             #print("current_velocity", current_com_vel[0:2])
             #print("angular momentum pitch", current_ang_momentum[1])
             #print("ang_momentum_reward", self.ang_momentum_reward)
@@ -431,10 +431,11 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand(MujocoEnv, ut
 
         # switch to new command
         if self.test:
-            v = 0.5
-            self.vel_command = [v, 0.0, 0.0]
-        else:
             v = np.random.uniform(0.4, 0.4+self.step_rate*0.5)
+            self.vel_command = [v, 0.0, 0.0]
+            print("vel_command: ", self.vel_command[0])
+        else:
+            v = np.random.uniform(0.4, 0.4+min(self.step_rate*2, 1.0)*0.5)
             #v = 0.8
             self.vel_command = [v, 0.0, 0.0]
 

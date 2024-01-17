@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from rospkg import RosPack
 
-FILE_NAME = 'tension_0114.csv'
+FILE_NAME = 'tension_0115.csv'
 
 LINK_NUM = 1
 VALUE = 0

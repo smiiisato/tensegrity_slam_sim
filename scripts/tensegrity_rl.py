@@ -24,6 +24,8 @@ from tensegrity_sim_realmodel_fullactuator_no_stiffness_init_pos import Tensegri
 from tensegrity_sim_realmodel_fullactuator_no_stiffness_terminate import TensegrityEnvRealModelFullActuatorNoStiffnessTerminate
 from tensegrity_sim_realmodel_fullactuator_no_stiffness_penalty import TensegrityEnvRealModelFullActuatorNoStiffnessPenalty
 from tensegrity_sim_realmodel_fullactuator_no_stiffness_velocity_command import TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand
+from tensegrity_sim_realmodel_fullactuator_no_stiffness_forward import TensegrityEnvRealModelFullActuatorNoStiffnessForward
+from tensegrity_sim_realmodel_fullactuator_no_stiffness_no_action import TensegrityEnvRealModelFullActuatorNoStiffnessNoAction
 
 
 def parser():
@@ -74,6 +76,8 @@ def make_env(test, max_step, act_range=6.0, resume=False, render_mode=None):
                              TensegrityEnvRealModelFullActuatorNoStiffnessTerminate, # 8
                              TensegrityEnvRealModelFullActuatorNoStiffnessPenalty, # 9
                              TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand, # 10
+                             TensegrityEnvRealModelFullActuatorNoStiffnessForward, # 11
+                             TensegrityEnvRealModelFullActuatorNoStiffnessNoAction, # 12
                              ]  # TODO: add new env class here
         env_cls = env_class_options[args.sim_env-1]
         info_key = env_cls.info_keywords
@@ -131,6 +135,9 @@ def main():
     elif args.net_layer == 3:
         pi_arch = [512, 256, 128]
         vf_arch = [512, 256, 128]
+    elif args.net_layer == 2:
+        pi_arch = [512, 256]
+        vf_arch = [512, 256]
     policy_kwargs = dict(activation_fn=torch.nn.Tanh,
                          net_arch=dict(pi=pi_arch, vf=vf_arch),  # changed from [512, 256] 
                          log_std_init=-2.1,)  # -2.1  for ppo19
