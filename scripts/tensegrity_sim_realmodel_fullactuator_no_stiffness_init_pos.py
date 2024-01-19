@@ -36,11 +36,13 @@ ADD_ENC_VALUE_OBSERVATION = False
 USE_QUATERNION_OBSERVATION = False
 USE_ONLY_IMU_OBSERVATION = False
 USE_ACC_TENDON_OBSERVATION = True
-REMOVE_ACTION_OBSERVATION = True
+REMOVE_ACTION_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
 LOG_TENSION_FORCE = False
+LOG_FILE = '/logs/com_vel_slope_3.csv'
+LOG_TARGET = 'com_vel'
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPickle):
@@ -145,11 +147,13 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
                 
         self.rospack = RosPack()
         if self.log_to_csv:
-            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/tension_0114.csv'
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + LOG_FILE
             self.create_log_file()
             #self.create_log_file_imu()
 
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_slope_terrain.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
         MujocoEnv.__init__(
             self,
@@ -402,7 +406,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
         
         # log data to csv
         if self.log_to_csv:
-            self.log_tension_force(self.step_cnt, tension_force)
+            if LOG_TARGET == 'com_pos':
+                self.log_tension_force(self.step_cnt, current_com_pos)
+            elif LOG_TARGET == 'com_vel':
+                self.log_tension_force(self.step_cnt, current_com_vel)
             #self.log_tension_force(self.step_cnt, obs[0:36])
             #self.log_tension_force(self.step_cnt, self.data.sensordata)
             #self.log_tension_force(self.step_cnt, obs[36:60])
@@ -508,6 +515,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessInitPos(MujocoEnv, utils.EzPi
                          8.47204181e-03,  -1.07714591e-03,  3.47549673e-01,  7.04564028e-01,  7.09531554e-01, -9.15995917e-03,  8.40233416e-03,  
                          2.45486510e-03,   3.33814398e-04,  7.05319175e-02,  7.09541174e-01,  7.04166615e-01,  1.63291203e-02, -2.08341113e-02,
                         ])
+        qpos += np.array([0, 0, 0.5, 0, 0, 0, 0,]*6)
         
         # stable initial pose
         """ qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,

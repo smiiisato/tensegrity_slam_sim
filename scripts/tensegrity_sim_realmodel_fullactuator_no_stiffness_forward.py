@@ -5,6 +5,7 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from collections import deque
+import csv
 
 # from rospkg import RosPack
 from gymnasium import utils, spaces
@@ -32,6 +33,7 @@ INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 PLOT_SENSOR = False
 INITIAL_TENSION = 0.0
+LOG_TENSION_FORCE = True
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPickle):
@@ -79,6 +81,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
         self.plot_reward = PLOT_REWARD
         self.add_tendon_vel_obs = ADD_TENDON_VEL_OBSERVATION
         self.initial_tension = INITIAL_TENSION
+        self.log_to_csv = LOG_TENSION_FORCE
         
         # control range
         self.num_actions = 24
@@ -124,6 +127,11 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
                 self.draw_reward()
 
         self.rospack = RosPack()
+        if self.log_to_csv:
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/com_vel_forward_0118.csv'
+            self.create_log_file()
+            #self.create_log_file_imu()
+
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
@@ -254,50 +262,26 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
         ani1 = FuncAnimation(self.fig1, update1, frames=np.linspace(0, 10000, 10000),  
                             init_func=init1, blit=True)
         
-        self.fig2, self.ax2 = plt.subplots()
-        self.xdata2, self.ydata2 = [], []
-        self.ln2, = plt.plot([], [], 'r-', animated=True)
-        def init2():
-            self.ax2.set_xlim(0, 10000)
-            self.ax2.set_ylim(-2, 2)
-            self.ax2.set_ylabel("ang_momentum_reward")
-            return self.ln2,
-        def update2(frame):
-            self.data2.append(frame)
-            self.ydata2.append(self.ang_momentum_reward)
-            self.ln2.set_data(self.xdata2, self.ydata2)
-            return self.ln2,
-        ani2 = FuncAnimation(self.fig2, update2, frames=np.linspace(0, 10000, 10000), interval=1,
-                            init_func=init2, blit=True)
-        
-        self.fig3, self.ax3 = plt.subplots()
-        self.xdata3, self.ydata3 = [], []
-        self.ln3, = plt.plot([], [], 'r-', animated=True)
-        def init3():
-            self.ax3.set_xlim(0, 10000)
-            self.ax3.set_ylim(-2, 2)
-            self.ax3.set_ylabel("total_reward")
-            return self.ln3,
-        def update3(frame):
-            self.data3.append(frame)
-            self.ydata3.append(self.current_step_total_reward)
-            self.ln3.set_data(self.xdata3, self.ydata3)
-            return self.ln3,
-        ani2 = FuncAnimation(self.fig3, update3, frames=np.linspace(0, 10000, 10000), interval=1,
-                            init_func=init3, blit=True)
-        
-        plt.show(block=False)
-        
-    def plot_sensor_data(self):
-        import matplotlib.pyplot as plt
-
-        plt.figure()
-        plt.plot(self.sensor_data)
-        plt.title("Acceleration Sensor Data")
-        plt.xlabel("Step")
-        plt.ylabel("link1_acceleration_x")
-        plt.show()
-        
+    def create_log_file(self):
+        import csv
+        with open(self.log_file, 'w') as f:
+            writer = csv.writer(f)
+            header = ['Step'] + [f'data_{i+1}' for i in range(24)]
+            writer.writerow(header)
+            
+    def create_log_file_imu(self):
+        import csv
+        with open(self.log_file, 'w') as f:
+            writer = csv.writer(f)
+            header = ['Step'] + [f'data_{i+1}' for i in range(36)]
+            writer.writerow(header)
+            
+    def log_tension_force(self, step, tension_force):
+        with open(self.log_file, 'a') as f:
+            writer = csv.writer(f)
+            data = [step] + list(tension_force)
+            writer.writerow(data)
+    
     def step(self, action):
         """
         what we need do inside the step():
@@ -371,6 +355,14 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
         self.contorl_penalty = -0.000 * np.linalg.norm(action - self.prev_action) * self.step_rate
         #self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
         self.current_step_total_reward = self.velocity_reward + 1.5 * self.ang_momentum_reward + 5.0 * self.ang_momentum_penalty + self.action_penalty + self.contorl_penalty
+        
+        # log data to csv
+        if self.log_to_csv:
+            self.log_tension_force(self.step_cnt, current_com_vel)
+            #self.log_tension_force(self.step_cnt, obs[0:36])
+            #self.log_tension_force(self.step_cnt, self.data.sensordata)
+            #self.log_tension_force(self.step_cnt, obs[36:60])
+            #self.log_tension_force(self.step_cnt, self.data.ten_length)
         
         ## update prev_action
         self.prev_action = action

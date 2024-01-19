@@ -1,5 +1,5 @@
 <mujoco model="scene">
-  <include file="tensegrity_real_model_fullactuator_new_coordinate_terrain.xml"/>
+  <include file="tensegrity_real_model_fullactuator_new_coordinate_slope.xml"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.5 0.5 0.3" specular="0 0 0"/>
@@ -11,7 +11,7 @@
       <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
       <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"
         reflectance="0.2"/>
-      <hfield name="rough_terrain" file="./png/rough_terrain.png" size="50 50 0.151 0.01"/>
+      <hfield name="rough_terrain" file="./png/smooth_slope.png" size="10 10 1.05 0.01"/>
     </asset>
 
     <worldbody>
