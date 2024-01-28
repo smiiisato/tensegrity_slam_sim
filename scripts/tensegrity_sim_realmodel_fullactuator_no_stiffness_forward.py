@@ -34,6 +34,8 @@ PLOT_REWARD = False
 PLOT_SENSOR = False
 INITIAL_TENSION = 0.0
 LOG_TENSION_FORCE = True
+LOG_PATH = '/logs/amg_mom_forward_0118.csv'
+LOG_TARGET = 'ang_momentum'
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPickle):
@@ -128,7 +130,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
 
         self.rospack = RosPack()
         if self.log_to_csv:
-            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/com_vel_forward_0118.csv'
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + LOG_PATH
             self.create_log_file()
             #self.create_log_file_imu()
 
@@ -358,7 +360,12 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessForward(MujocoEnv, utils.EzPi
         
         # log data to csv
         if self.log_to_csv:
-            self.log_tension_force(self.step_cnt, current_com_vel)
+            if LOG_TARGET == 'com_pos':
+                self.log_tension_force(self.step_cnt, current_com_pos)
+            elif LOG_TARGET == 'com_vel':
+                self.log_tension_force(self.step_cnt, current_com_vel)
+            elif LOG_TARGET == 'ang_momentum':
+                self.log_tension_force(self.step_cnt, current_ang_momentum)
             #self.log_tension_force(self.step_cnt, obs[0:36])
             #self.log_tension_force(self.step_cnt, self.data.sensordata)
             #self.log_tension_force(self.step_cnt, obs[36:60])

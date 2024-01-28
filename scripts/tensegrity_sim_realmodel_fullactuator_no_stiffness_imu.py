@@ -30,8 +30,8 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_ENC_VALUE_OBSERVATION = True
+ADD_TENDON_LENGTH_OBSERVATION = True
+ADD_ENC_VALUE_OBSERVATION = False
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 PLOT_SENSOR = False
@@ -70,7 +70,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             self.ema_data = []
             
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36))
+        self.ema_filter = EMAFilter(0.267, np.array([0.0]*36))
         # initial encoder value
         self.enc_value = np.array([0.0]*24)
         # initial tendon length
@@ -405,7 +405,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessImu(MujocoEnv, utils.EzPickle
             self.vel_command = [v, 0.0, 0.0]
 
         # ema filter
-        self.ema_filter = EMAFilter(0.2, np.array([0.0]*36)) ## TODO: will cahnge to 0.1
+        self.ema_filter = EMAFilter(0.267, np.array([0.0]*36)) ## TODO: will cahnge to 0.1
         # initial encoder value
         self.enc_value = np.array([0.0]*24)
         # initial tendon length

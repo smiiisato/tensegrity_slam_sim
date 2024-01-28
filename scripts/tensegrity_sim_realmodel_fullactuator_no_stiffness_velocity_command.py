@@ -431,7 +431,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessVelocityCommand(MujocoEnv, ut
 
         # switch to new command
         if self.test:
-            v = np.random.uniform(0.4, 0.4+self.step_rate*0.5)
+            v = np.random.uniform(0.4, 0.9)
+            #v = 0.4
             self.vel_command = [v, 0.0, 0.0]
             print("vel_command: ", self.vel_command[0])
         else:

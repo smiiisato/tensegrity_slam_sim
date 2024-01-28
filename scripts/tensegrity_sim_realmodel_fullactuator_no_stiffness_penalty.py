@@ -39,7 +39,9 @@ USE_ACC_TENDON_OBSERVATION = True ## only use this observation
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 INITIAL_TENSION = 0.0
-LOG_TENSION_FORCE = True
+LOG_TENSION_FORCE = False
+LOG_FILE = '/logs/com_pos_terrain_10_2.csv'
+LOG_TARGET = 'com_pos' # 'com_pos' or 'com_vel
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPickle):
@@ -132,17 +134,18 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
 
         self.step_rate = 0.
         if self.test:
-            self.step_rate = 0.3
+            self.step_rate = 0.0
             if self.plot_reward:
                 self.draw_reward()
                 
         self.rospack = RosPack()
         if self.log_to_csv:
-            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + '/logs/ten_len_0115.csv'
-            self.create_log_file()
-            #self.create_log_file_imu()
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + LOG_FILE
+            
 
-        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
+        #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
+        model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_slope_terrain.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
         MujocoEnv.__init__(
             self,
@@ -302,11 +305,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
         
         # log data to csv
         if self.log_to_csv:
-            #self.log_tension_force(self.step_cnt, tension_force)
-            #self.log_tension_force(self.step_cnt, obs[0:18])
-            #self.log_tension_force(self.step_cnt, self.data.sensordata)
-            #self.log_tension_force(self.step_cnt, obs[36:60])
-            self.log_tension_force(self.step_cnt, self.data.ten_length)
+            if LOG_TARGET == 'com_pos':
+                self.log_tension_force(self.step_cnt, current_com_pos)
+            elif LOG_TARGET == 'com_vel':
+                self.log_tension_force(self.step_cnt, current_com_vel)
         
         ## update prev_action
         self.prev_action = action
@@ -366,10 +368,10 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
         # check terminate and truncated
         self.com_pos_deque.appendleft(current_com_pos)
         terminated = False
-        if self.episode_cnt > 400:
+        """ if self.episode_cnt > 400:
             terminated = np.linalg.norm(self.com_pos_deque[0] - self.com_pos_deque[-1]) < 0.03
         if terminated:
-            self.current_step_total_reward += -5.0
+            self.current_step_total_reward += -5.0 """
 
         truncated = not (self.episode_cnt < self.max_episode)
 
@@ -393,7 +395,8 @@ class TensegrityEnvRealModelFullActuatorNoStiffnessPenalty(MujocoEnv, utils.EzPi
 
         # sample random initial pose
         
-        qpos_addition = np.random.uniform(-0.03, 0.03, len(self.default_init_qpos)) * min(self.step_rate*2, 1.0)  # TODO:BUG
+        #qpos_addition = np.random.uniform(-0.03, 0.03, len(self.default_init_qpos)) * min(self.step_rate*2, 1.0)  # TODO:BUG
+        qpos_addition = np.array([0, 0, 0.48, 0, 0, 0, 0]*6)
         #self.data.ten_length[:] = [0.30]*24
         #print("ten_length: ", self.data.ten_length)
         self.enc_value = np.array([0.0]*24)

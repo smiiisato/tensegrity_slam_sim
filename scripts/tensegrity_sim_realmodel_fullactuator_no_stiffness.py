@@ -11,6 +11,7 @@ from gymnasium import utils, spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from tensegrity_sim import TensegrityEnv
 from rospkg import RosPack
+import csv
 
 
 def rescale_actions(low, high, action):
@@ -24,15 +25,19 @@ def rescale_actions(low, high, action):
     return rescaled_action
 
 
-USE_ANG_VEL_OBS = False
-USE_ONLY_TENDON_LENGTH_OBS = True
+USE_ANG_VEL_OBS = True
+USE_ONLY_TENDON_LENGTH_OBS = False
 ADD_ASSISTIVE_FORCE = False
-ADD_TENDON_LENGTH_OBSERVATION = False
-ADD_TENDON_VEL_OBSERVATION = False
+ADD_TENDON_LENGTH_OBSERVATION = True
+ADD_TENDON_VEL_OBSERVATION = True
 INITIALIZE_ROBOT_IN_AIR = False
 PLOT_REWARD = False
 PLOT_SENSOR = False
 INITIAL_TENSION = 0.0
+LOG_TENSION_FORCE = True
+LOG_FILE = '/logs/ang_mom_vel_ang.csv'
+LOG_TARGET = 'ang_momentum'
+TEST_VELOCITY = 0.8
 
 
 class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
@@ -81,6 +86,7 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         self.plot_reward = PLOT_REWARD
         self.add_tendon_vel_obs = ADD_TENDON_VEL_OBSERVATION
         self.initial_tension = INITIAL_TENSION
+        self.log_to_csv = LOG_TENSION_FORCE
         
         # control range
         self.num_actions = 24
@@ -128,6 +134,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
                 self.draw_reward()
 
         self.rospack = RosPack()
+        if self.log_to_csv:
+            self.log_file = self.rospack.get_path('tensegrity_slam_sim') + LOG_FILE
+            
         model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_real_model_fullactuator_no_stiffness.xml'
         #model_path = self.rospack.get_path('tensegrity_slam_sim') + '/models/scene_rough_terrain.xml'
         self.frame_skip = 2  # number of mujoco simulation steps per action step
@@ -237,6 +246,13 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
     def _get_stack_obs(self):
         return np.concatenate([self.obs_deque[i] for i in range(self.n_obs_step)])
+    
+    def log_tension_force(self, step, tension_force):
+        with open(self.log_file, 'a') as f:
+            writer = csv.writer(f)
+            data = [step] + list(tension_force)
+            writer.writerow(data)
+    
     
     def draw_reward(self):
         import matplotlib.pyplot as plt
@@ -381,7 +397,9 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
             self.velocity_reward = 1.0
         else:
             # velocity_reward = e^(-12*(v_x - v_x_cmd)^2)
-            self.velocity_reward = np.exp(-6.0*(np.dot(current_com_vel[0:2], self.vel_command[0:2]) - np.linalg.norm(self.vel_command[0:2])**2)**2)
+            coef = 30.0
+            self.velocity_reward = np.exp(-30.0*(np.dot(current_com_vel[0:2], self.vel_command[0:2]) - np.linalg.norm(self.vel_command[0:2])**2)**2)
+            #self.velocity_reward = np.exp(-6.0*(np.dot(current_com_vel[0:2], self.vel_command[0:2]) - np.linalg.norm(self.vel_command[0:2])**2)**2)
             #self.velocity_reward = np.exp(-10.0*(np.dot(current_com_vel[0:2], self.vel_command[0:2]) - np.linalg.norm(self.vel_command[0:2]))**2)
             #self.velocity_reward = np.exp(-8.0*np.square(current_com_vel[0:2] - self.vel_command[0:2]).sum())
         self.ang_momentum_penalty = current_ang_momentum[1] * int(current_ang_momentum[1] < 0.)
@@ -465,6 +483,16 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
                 # np.save("sensor_data.npy", self.sensor_data)
                 # print("sensor data saved!")
                 self.plot_sensor_data()
+                
+        # log data to csv
+        if self.log_to_csv:
+            if LOG_TARGET == 'com_pos':
+                self.log_tension_force(self.step_cnt, current_com_pos)
+            elif LOG_TARGET == 'com_vel':
+                self.log_tension_force(self.step_cnt, current_com_vel)
+            elif LOG_TARGET == 'ang_momentum':
+                self.log_tension_force(self.step_cnt, current_ang_momentum)
+        
 
         return (
             obs,
@@ -490,16 +518,17 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
         # qpos_addition = np.random.uniform(-0.00, 0.00, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
         # initial tendon length
         self.data.ten_length[:] = [0.30]*24
-        qpos_addition = np.random.uniform(-0.02, 0.02, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        qpos_addition = np.random.uniform(-0.00, 0.00, len(self.default_init_qpos)) * self.step_rate  # TODO:BUG
+        qpos = self.default_init_qpos 
 
-        qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
+        """ qpos = np.array([0.14717668,  0.14711882,  0.15701801,  0.86432397, -0.40548401,  0.2194443,
                         -0.20092532,  0.350647,    0.11930152,  0.06542414,  0.79409071, -0.2563381,
                         0.54759233,  0.06207542,  0.22993135,  0.20179415,  0.06074503,  0.50408641,
                         -0.1424163,   0.77721656, -0.34863865,  0.27766309,  0.00355943,  0.15893443,
                         0.39771177, -0.1131317,   0.89793995, -0.1507661,   0.35460463,  0.19562937,
                         0.15674695,  0.86554097,  0.36059424,  0.23697669, -0.25426887,  0.19753333,
                         0.03760321,  0.07496286,  0.74249165,  0.51360453,  0.28749698, -0.31978435,
-                    ])
+                    ]) """
         qpos += qpos_addition
     
         # qpos = self.default_init_qpos + qpos_addition
@@ -520,10 +549,11 @@ class TensegrityEnvRealModelFullActuatorNoStiffness(MujocoEnv, utils.EzPickle):
 
         # switch to new command
         if self.test:
-            self.vel_command = [0.8, 0.0, 0.0]
+            v = TEST_VELOCITY
+            self.vel_command = [v, 0.0, 0.0]
         else:
             #v = np.random.uniform(0.4, 0.7)
-            v = 0.8
+            v = 0.5
             self.vel_command = [v, 0.0, 0.0]
 
         # calculate the current step observations and fill out the observation buffer
